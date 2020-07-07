@@ -195,11 +195,12 @@ class Grid():
             0,
             widthPx,
             heightPx,
-            0, 0, 0
+            250, 250, 250
         )
 
         # Draw grid lines
-        r.setLineColor(100, 100, 100)
+        #r.setLineColor(100, 100, 100)
+        r.setLineColor(0, 0, 0)
         for rowIdx in range(0, self.x_len):
             y = CELL_PIXELS * rowIdx
             r.drawLine(0, y, widthPx, y)
