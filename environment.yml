@@ -1,4 +1,4 @@
-name: gridworld
+name: gridworld2
 channels:
   - pytorch
   - defaults

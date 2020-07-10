@@ -5,6 +5,8 @@ from Agents.PPO.buffer import PPO_Buffer
 import itertools
 from utils.logger import Logger
 
+import numpy as np
+
 
 #heplper functions:
 def get_n_obs(next_obs, info):
@@ -49,11 +51,11 @@ def run(args):
         print("Iteration: {}".format(it))
         render_frames = []
         render_cntr = 0
-        info = [{"valid_act":{i:None for i in ob.keys()}} for ob in obs]
+        info2 = [{"valid_act":{i:None for i in ob.keys()}} for ob in obs]
         while buff.is_full == False:
             ppo.prep_device(device)
-            a_probs, a_select, value, hx_cx_actr_n, hx_cx_cr_n, blocking = zip(*[ppo.forward(ob,ha,hc, dev=device, valid_act_heur = inf["valid_act"] ) \
-                                    for ob,ha,hc, inf in zip(obs, hx_cx_actr, hx_cx_cr, info)])
+            a_probs, a_select, value, hx_cx_actr_n, hx_cx_cr_n, blocking = zip(*[ppo.forward(ob,ha,hc, dev=device, valid_act_heur = inf2["valid_act"] ) \
+                                    for ob,ha,hc, inf2 in zip(obs, hx_cx_actr, hx_cx_cr, info2)])
             a_env_dict = [{key:val.item() for key,val in hldr.items()} for hldr in a_select]
             next_obs, r, dones, info = env.step(a_env_dict)
             if it % args.render_rate == 0:

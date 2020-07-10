@@ -1,6 +1,7 @@
 
 """Different environment variants and make_env funciton"""
 import numpy as np
+import torch
 import argparse
 import time
 import copy

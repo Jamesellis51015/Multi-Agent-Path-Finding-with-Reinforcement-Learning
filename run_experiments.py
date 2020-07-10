@@ -11,6 +11,7 @@ import Experiments.test_ppo as exp8
 import Experiments.exp_ppo_curr as exp9
 import Experiments.ppo_hyp_param as exp10
 import Experiments.test_ppo2 as exp11
+import Experiments.ppo_hyp2 as exp12
 
 if __name__ == "__main__":
     #parameter_tuning()
@@ -26,15 +27,16 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser("Run Experiment")
     parser.add_argument("--name", type=str)
-    #args = parser.parse_args()
+    args = parser.parse_args()
+    #args = parser.parse_args(["--name", "ppo_A"])
     #args = parser.parse_args(["--name", "cn_maac_ic3"])
  #   args =  parser.parse_args(["--name", "test_maac_new"])
   #  args =  parser.parse_args(["--name", "test_ic3"]) 
     #args =  parser.parse_args(["--name", "test_a2c"]) 
-    args =  parser.parse_args(["--name", "test_ppo2"])
+    #args =  parser.parse_args(["--name", "test_ppo2"])
     #args =  parser.parse_args(["--name", "exp_ppo_curr"])
    # args =  parser.parse_args(["--name", "ppo_hyp_param"])
-    experiments = [exp, exp2, exp3, exp4, exp5, exp6, exp7, exp8, exp9, exp10, exp11]
+    experiments = [exp, exp2, exp3, exp4, exp5, exp6, exp7, exp8, exp9, exp10, exp11, exp12]
     flag = True
     for ex in experiments:
         if hasattr(ex, args.name):

@@ -11,6 +11,26 @@ import math
 from sklearn.model_selection import ParameterGrid
 if __name__ == "__main__":
 
+    def get_events_paths(base_folder, remove_duplicates = True):
+        '''Return dict of {exp_name: event_file_path} '''
+        experiments = {}
+        tfeventstr = "events.out.tfevents"
+        for root, dirs, file in os.walk(base_folder, topdown=False):
+            for f in file:
+                if tfeventstr in f:
+                    name = root.split('/')[-1]
+                    if remove_duplicates and 'N' in name:
+                        hldr = name.split('_')[-1]
+                        num = int(hldr[1:])
+                        if num > 0:
+                            continue
+                    experiments[name] = os.path.join(root, f)
+        return experiments
+
+    filename = '/home/james/Desktop/Gridworld/test'
+    exp = get_events_paths(filename, True)
+    for k,v in exp.items():
+        print("key: {} \n val:{} \n\n".format(k, v))
     # pos = {
     #     0: [(0,0), (1,1), (2,2)],
     #     1: [(3,3)],
@@ -31,11 +51,6 @@ if __name__ == "__main__":
 
     # for i in zip(a,b):
     #     print(i)
-    k =tuple(((1,2),(3,4)))
-    a = set(k)
-    b = a.pop()
-    print(b)
-
     # for i in a:
     #     print(i)
 

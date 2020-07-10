@@ -13,7 +13,7 @@ def make_parallel_env(args,seed, n_rollout_threads):
     def get_env_fn(rank):
         def init_env():
             env = make_env(args)
-            np.random.seed(seed + rank * 1000)
+           # np.random.seed(seed + rank * 1000)
             return env
         return init_env
     if n_rollout_threads == 1:

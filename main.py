@@ -174,6 +174,7 @@ def main(args):
 
     config.set_global_seed(args.seed)
 
+    
     env = make_env(args)
 
     print("Running: \n {}".format(env.summary()))
