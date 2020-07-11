@@ -5,7 +5,15 @@ import os
 import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
+#matplotlib.rcParams['text.usetex'] = True
 
+
+def make_exist(path):
+    '''If path does not exist, make path and return path '''
+    (d,n) = os.path.split(path)
+    if not os.path.exists(d):
+        os.makedirs(d)
+    return path
 
 def get_fields(file_location):
     fields = {}
@@ -68,10 +76,15 @@ def filter(data, filter_terms):
             filter_data[k] = v
     return filter_data
 
-def plot(ax, data, field, plot_term, smooth = None):
+def plot(ax, data, field, plot_term, params, smooth = None):
     '''data is already in filtered form
     data: {name:list of data_points} '''
+    def last(a):
+        return a[-1]
+
+    all_plots = []
     lookup = set()
+    exclude_last_points = 1
     for k, v in data.items():
         if plot_term in k:
             exp_id = k.split("_")
@@ -79,39 +92,57 @@ def plot(ax, data, field, plot_term, smooth = None):
             plot_term_value = exp_id[ind+1]
             if not plot_term_value in lookup:
                 lookup.add(plot_term_value)
-                label = plot_term + ' = ' + plot_term_value
+                label = params["aliasplotterm"] + ' = ' + plot_term_value
                 if not smooth is None:
                     new_data = moving_average_filter(v[field], smooth)
+                    exclude_last_points = smooth + 1
                 else:
                     new_data = v[field][:]
                 x = np.arange(len(new_data))
-                ax.plot(x, new_data, label = label)
-
-
-
-
-
-
-
-if __name__ == "__main__":
-    file = '/home/james/Desktop/Gridworld/test/test2'
-
-    fig, ax = plt.subplots()
+                ax.plot(x[5:-exclude_last_points], new_data[5:-exclude_last_points], label = label)
+                #all_plots.append((handle,label, float(plot_term_value)))
     
-    all_data = get_event_data(file)
+    handles, labels = ax.get_legend_handles_labels()
+    label_id = [float(l.split(" = ")[-1]) for l in labels]
+    all_plots = [tuple(i) for i in zip(handles, labels, label_id)]
+    all_plots.sort(key = last, reverse=True)
 
-    filter_terms = ["envsize_7"]
-    field = "agent_dones"
-    plot_term = "disc"
 
-    data = filter(all_data, filter_terms)
-    plot(ax, data, field, plot_term, smooth=40)
+   # print(handles, labels)
+    ax.set_xlabel(params["xlabel"])  # Add an x-label to the axes.
+    ax.set_ylabel(params["ylabel"])  # Add a y-label to the axes.
+    ax.set_title(params["title"])  # Add a title to the axes.
+  #  handles = [p[0] for p in all_plots]
+  #  lbls = [p[1] for p in all_plots]
+    h,l,_ = zip(*all_plots)
+    ax.legend(h, l)  # Add a legend.
 
-    ax.set_xlabel('x label')  # Add an x-label to the axes.
-    ax.set_ylabel('y label')  # Add a y-label to the axes.
-    ax.set_title("Simple Plot")  # Add a title to the axes.
-    ax.legend()  # Add a legend.
-    plt.show()
+
+
+
+
+
+# if __name__ == "__main__":
+#     file = '/home/james/Desktop/Gridworld/test/test2'
+
+#     fig, ax = plt.subplots()
+    
+#     all_data = get_event_data(file)
+
+#     filter_terms = ["envsize_7"]
+#     field = "agent_dones"
+#     plot_term = "disc"
+
+
+
+#     data = filter(all_data, filter_terms)
+#     plot(ax, data, field, plot_term, smooth=40)
+
+#     ax.set_xlabel('x label')  # Add an x-label to the axes.
+#     ax.set_ylabel('y label')  # Add a y-label to the axes.
+#     ax.set_title("Simple Plot")  # Add a title to the axes.
+#     ax.legend()  # Add a legend.
+#     plt.show()
 
 
     # #Terms to filter out the experiments interested in
