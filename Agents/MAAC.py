@@ -65,7 +65,6 @@ def run(config, logger0):
     episode_length = hldr.max_step
     del hldr
 
-   # quit()
 
     model = AttentionSAC.init_from_env(env, 
                                        tau=config.maac_tau,

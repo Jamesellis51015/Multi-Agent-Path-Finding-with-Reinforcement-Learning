@@ -12,6 +12,8 @@ import Experiments.exp_ppo_curr as exp9
 import Experiments.ppo_hyp_param as exp10
 import Experiments.test_ppo2 as exp11
 import Experiments.ppo_hyp2 as exp12
+import Experiments.maac_hyp as exp13
+import Experiments.ic3_hyp as exp14
 
 if __name__ == "__main__":
     #parameter_tuning()
@@ -36,7 +38,9 @@ if __name__ == "__main__":
     #args =  parser.parse_args(["--name", "test_ppo2"])
     #args =  parser.parse_args(["--name", "exp_ppo_curr"])
    # args =  parser.parse_args(["--name", "ppo_hyp_param"])
-    experiments = [exp, exp2, exp3, exp4, exp5, exp6, exp7, exp8, exp9, exp10, exp11, exp12]
+
+
+    experiments = [exp, exp2, exp3, exp4, exp5, exp6, exp7, exp8, exp9, exp10, exp11, exp12, exp13, exp14]
     flag = True
     for ex in experiments:
         if hasattr(ex, args.name):
@@ -45,6 +49,19 @@ if __name__ == "__main__":
             flag = False
     if flag:
         print("No experiment with that name")
+
+   # from Experiments.ic3_hyp import ic3_1A1
+   # ic3_1A1()
+
+
+
+    # from Experiments.maac_hyp import maac_2A1
+    # maac_2A1()
+
+    #from Experiments.ppo_hyp2 import ppo_TEST
+    #ppo_TEST()
+    # from Experiments.maac_hyp import maac_1E1
+    # maac_1E1()
 
     # elif hasattr(exp2, args.name):
     #     e2 = getattr(exp2, args.name)

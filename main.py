@@ -10,6 +10,7 @@ from utils.logger import Logger
 import config
 import sys
 import os
+import numpy as np
 
 def main(args):
     parser = argparse.ArgumentParser("Experiment parameters")
@@ -77,7 +78,7 @@ def main(args):
     #parser.add_argument("--comm_mode", default = 1, type = int,
     #help= "if mode == 0 -- no communication; mode==1--ic3net communication; mode ==2 -- commNet communication")
     parser.add_argument("--comm_mode", default = "avg", type = str, help="Average or sum the hidden states to obtain the comm vector")
-    parser.add_argument("--hard_attn", default=True, type=bool, help="to communicate or not. If hard_attn == False, no comm")
+    parser.add_argument("--hard_attn", default=True,action='store_false', help="to communicate or not. If hard_attn == False, no comm")
     parser.add_argument("--comm_mask_zero", default=False,action='store_true', help="to communicate or not. If hard_attn == False, no comm")
     parser.add_argument('--comm_action_one', default=False, action='store_true',
                     help='Whether to always talk, sanity check for hard attention.')
@@ -101,7 +102,7 @@ def main(args):
     parser.add_argument("--maac_pi_lr", default=0.001, type=float)
     parser.add_argument("--maac_q_lr", default=0.001, type=float)
     parser.add_argument("--maac_tau", default=0.001, type=float)
-    parser.add_argument("--maac_gamma", default=0.99, type=float)
+    parser.add_argument("--maac_gamma", default=0.9, type=float)
     parser.add_argument("--maac_reward_scale", default=100., type=float)
     parser.add_argument("--maac_use_gpu", action='store_true')
     parser.add_argument("--maac_share_actor", action='store_true')
@@ -194,9 +195,10 @@ def main(args):
             stats["iterations"] = iteration
             terminal_t_info = [inf for i,inf in enumerate(batch.misc) if inf["terminate"]]
             
-            logger.log(stats, terminal_t_info, render_frames)
+            avg_comm = np.average([np.average(inf['comm_action']) for inf in batch.misc])
+            logger.log(stats, terminal_t_info, render_frames, commActions=avg_comm)
 
-            if iteration % args.checkpoint_frequency and iteration != 0:
+            if iteration % args.checkpoint_frequency==0 and iteration != 0:
                 path = logger.checkpoint_dir + "/checkpoint_"+ str(iteration)
                 policy.save(path) 
 

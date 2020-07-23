@@ -27,6 +27,22 @@ def make_env(args):
         from Env.env import Independent_NavigationV2
         env = Independent_NavigationV2(args)
         return env
+    elif args.env_name == 'independent_navigation-v3':
+        from Env.env import Independent_NavigationV3
+        env = Independent_NavigationV3(args)
+        return env
+    elif args.env_name == 'independent_navigation-v4_1':
+        from Env.env import Independent_NavigationV4_1 as hldr
+        env = hldr(args)
+        return env
+    elif args.env_name == 'independent_navigation-v4_2':
+        from Env.env import Independent_NavigationV4_2 as hldr
+        env = hldr(args)
+        return env
+    elif args.env_name == 'independent_navigation-v4_3':
+        from Env.env import Independent_NavigationV4_3 as hldr
+        env = hldr(args)
+        return env
     elif args.env_name == "predator_pray":
         pass
     elif args.env_name == "cooperative_navigation-v0":

@@ -214,7 +214,7 @@ if __name__ == "__main__":
         parser.add_argument("--n_agents", default = 2, type=int)
         parser.add_argument("--env_name", default = name, type= str)
         parser.add_argument("--use_default_rewards", default=True, type=bool)
-        parser.add_argument("--obj_density", default = 0.2, type=int)
+        parser.add_argument("--obj_density", default = 0.4, type=int)
         parser.add_argument("--view_d", default = 2, type=int)
         parser.add_argument("--ppo_recurrent", default= False, action='store_true')
         parser.add_argument("--ppo_heur_block", default= False, action='store_true')
@@ -415,10 +415,14 @@ if __name__ == "__main__":
     # name2 = 'cooperative_navigation-v1'
    # test_CN(name)
    # test_rendering()
-    name = 'independent_navigation-v0'
+    
 
 
     # name = 'independent_navigation-v2'
+
+    #name = 'independent_navigation-v4_1'
+
+    name = 'independent_navigation-v0'
     test_IndNav(name)
 
    # test_corridor()

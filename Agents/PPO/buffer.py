@@ -176,6 +176,10 @@ class PPO_Buffer():
         a_prob = torch.cat(a_prob_hldr)
         a_select = torch.cat(a_select_hldr)
         adv = torch.cat(adv_hldr)
+
+        #Normalize Batch of rewards
+     #   adv = (adv - adv.mean())/(adv.std() + 1e-5)
+       ## hldr2 = adv.mean()
         v = torch.cat(v_hldr)
 
         if blocking:

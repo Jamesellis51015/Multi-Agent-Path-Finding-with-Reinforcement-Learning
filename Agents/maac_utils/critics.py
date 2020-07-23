@@ -197,21 +197,29 @@ class AttentionCritic(nn.Module):
         PolicyBase = make_base_policy(self.base_policy_type)
         if self.base_policy_type == 'mlp':
             class MlpCritEncoder(PolicyBase):
-                def __init__(self, dim, hidden_dim, nonlin= F.leaky_relu):
-                    super(MlpCritEncoder, self).__init__(dim, hidden_dim, nonlin= F.leaky_relu)
+                def __init__(self, sdim_h, adim_h, hidden_dim, nonlin= F.leaky_relu):
+                    dim_cat = [sdim_h + adim_h]
+                    super(MlpCritEncoder, self).__init__(dim_cat, hidden_dim, nonlin= F.leaky_relu)
+                    #self.bn = nn.BatchNorm1d(sdim_h, affine=False)
                 def forward(self, o, a):
                     #batch_size = o.size()[0]
                     o = o.flatten(1)
+                 #   print("o[0]: {}".format(o[0]))
+                  #  o = self.bn(o)
+                   # print("bn o[0]: {}".format(o[0]))
                     x = torch.cat([o, a], dim = 1)
                     x = self.fc1(x)
+         #           print("fx1 x[0]: {}".format(x[0]))
                     x = self.nonlin(x)
+               #     print("out x[0]: {}".format(x[0]))
                     return x
             sdim = list(sdim)
             hldr=1
             for i in sdim: #flatten
                 hldr *=i
-            dim_cat = [hldr + adim]
-            base = MlpCritEncoder(dim_cat, hidden_dim, nonlin= F.leaky_relu)
+            sdim_h = hldr
+            #dim_cat = [hldr + adim]
+            base = MlpCritEncoder(sdim_h, adim, hidden_dim, nonlin= F.leaky_relu)
         else:
             class CnnCritEncoder(PolicyBase):
                 def __init__(self, sdim, adim, hidden_dim):
