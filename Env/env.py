@@ -548,6 +548,13 @@ class Independent_NavigationV2(Grid_Env):
         r = {i:0 for i, a in self.agents.items()}
         return r
 
+class Independent_NavigationV3(Independent_NavigationV0):
+    '''A partially observable version of Independent navigation V0. Agents do not see other agent positions. '''
+    def __init__(self, args):
+        super().__init__(args)
+        self.inc_other_agents = False
+        observation_space = self.init_observation_space()
+        self.observation_space = [copy.deepcopy(observation_space) for _ in self.agents]
 
 
 class Cooperative_Navigation_V0(Grid_Env):
@@ -592,7 +599,7 @@ class Cooperative_Navigation_V0(Grid_Env):
         #     g.goal_id = goal_ids[i]
         self.goals = {i : g for i,g in enumerate(self.goals)}
 
-        self.graph = GridToGraph(self.grid)
+        self.graph = Heuristics(self.grid,self)
         self.clear_paths()
         #Set reward function, obsevation space etc
         self.rewards = self.Rewards()
@@ -717,10 +724,87 @@ class Cooperative_Navigation_V1(Cooperative_Navigation_V0):
         self.observation_space = [copy.deepcopy(observation_space) for _ in self.agents]
 
 
+################## 
+# #            TESTING REWARD STRUCTURES
+# 
+
+class Independent_NavigationV4_1(Independent_NavigationV0):
+    '''A partially observable version of Independent navigation V0. Agents do not see other agent positions. '''
+    class Rewards(): #For this Env this is global rewards
+        step= -0.01
+        object_collision = -0.015#-0.1
+        agent_collision = -0.0
+        goal_reached= 0.0#0.01
+        finish_episode = 1
+
+    def __init__(self, args):
+        super().__init__(args)
+        self.rewards = self.Rewards()
+    
+    def get_rewards(self, collisions):
+        rewards = {}
+        isdone = {}
+        overall_dones = {}
+        global_step_reward = self.rewards.step * len(self.agents)
+
+        for handle, agent in self.agents.items():
+            for g in self.goals.values():
+                if g.pos == agent.pos and g.goal_id == agent.id:
+                    global_step_reward += self.rewards.goal_reached
+                    #rewards[handle] = self.rewards.goal_reached
+                    isdone[handle] = True
+                    break
+                else:
+                   # rewards[handle] = self.rewards.step
+                    isdone[handle] = False
+        if sum(isdone.values()) == len(self.agents):
+            global_step_reward += self.rewards.finish_episode
+            for handle in self.agents.keys(): 
+               # rewards[handle] = self.rewards.finish_episode
+                overall_dones[handle] = True
+        else:
+            for i, agnt in self.agents.items():
+                overall_dones[i] = False
+
+        if collisions['obs_col']:
+            for key, val in collisions['obs_col'].items():
+                if val: global_step_reward += self.rewards.object_collision
+                #if val: rewards[key] += self.rewards.object_collision
+        if collisions['agent_col']:
+            for key, val in collisions['agent_col'].items():
+                if val: global_step_reward += self.rewards.agent_collision
+                #if val: rewards[key] += self.rewards.agent_collision
+        for handle, agent in self.agents.items():
+            rewards[handle] = global_step_reward
+        return overall_dones, rewards
 
 
 
+class Independent_NavigationV4_2(Independent_NavigationV4_1):
+    '''A partially observable version of Independent navigation V0. Agents do not see other agent positions. '''
+    class Rewards(): #For this Env this is global rewards
+        step= -0.01
+        object_collision = -0.015#-0.1
+        agent_collision = -0.4
+        goal_reached= 0.0#0.01
+        finish_episode = 1
 
+    def __init__(self, args):
+        super().__init__(args)
+        self.rewards = self.Rewards()
+
+class Independent_NavigationV4_3(Independent_NavigationV4_1):
+    '''A partially observable version of Independent navigation V0. Agents do not see other agent positions. '''
+    class Rewards(): #For this Env this is global rewards
+        step= -0.01
+        object_collision = -0.015#-0.1
+        agent_collision = -0.4
+        goal_reached= -0.01
+        finish_episode = 1
+
+    def __init__(self, args):
+        super().__init__(args)
+        self.rewards = self.Rewards()
 # if __name__ == "__main__":
 
 #     def test_CN():
