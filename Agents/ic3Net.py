@@ -192,14 +192,14 @@ class IC3Net(nn.Module):
         x = x.reshape(batch_size, n, self.hid_size)
 
         num_agents_alive, agent_mask = self.get_agent_mask(batch_size, info)
-
+        agent_mask = agent_mask.clone()
+        agent_mask = agent_mask.to(config.device)
         # Hard Attention - action whether an agent communicates or not
         if self.args.hard_attn:
             comm_action = torch.tensor(info['comm_action']).to(config.device)
             comm_action_mask = comm_action.expand(batch_size, n, n).unsqueeze(-1)
             # action 1 is talk, 0 is silent i.e. act as dead for comm purposes.
-            agent_mask = agent_mask.clone()
-            agent_mask = agent_mask.to(config.device)
+            
             agent_mask *= comm_action_mask.double()
 
         agent_mask_transpose = agent_mask.transpose(1, 2)
@@ -387,16 +387,31 @@ class IC3Net(nn.Module):
         # if self.args.advantages_per_action:
         #     log_prob = multinomials_log_densities(actions, log_p_a)
         # else:
+        
+
         log_prob = multinomials_log_density(actions, log_p_a)
+
+       # entr = log_p_a.squeeze()
 
         # if self.args.advantages_per_action:
         #     action_loss = -advantages.view(-1).unsqueeze(-1) * log_prob
         #     action_loss *= alive_masks.unsqueeze(-1)
         # else:
+        entropy = 0
+        # for i in range(len(log_p_a)):
+        #     entropy -= (log_p_a[i] * log_p_a[i].exp()).sum()
+
+        #Policy entropy:
+        ent_coeff = torch.tensor(self.args.entropy_coeff).to(config.device)
+        entropy -= (log_p_a[0] * log_p_a[0].exp()).sum() * ent_coeff
+        entropy -= (log_p_a[1] * log_p_a[1].exp()).sum() * ent_coeff*0.05
+
+        #entropy = entropy * torch.tensor(self.args.entropy_coeff).to(config.device)
         action_loss = -advantages.to(config.device).view(-1) * log_prob.squeeze()
         action_loss *= alive_masks
 
         action_loss = action_loss.sum()
+        action_loss -= entropy
         stat['action_loss'] = action_loss.item()
 
         # value loss term
