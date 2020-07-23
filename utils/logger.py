@@ -248,7 +248,7 @@ class Logger():
             clip = mpy.ImageSequenceClip(render_frames, fps = 5)
             clip.write_videofile(self.benchmark_dir + "/benchmark_render_" + end + '.mp4')
 
-    def log(self,stats, terminal_t_info, render_frames, checkpoint = True):
+    def log(self,stats, terminal_t_info, render_frames, checkpoint = True, commActions = None):
         '''stats: > Episodes and timesteps PER BATCH.
                     --Each batch has the actions taken per agent 
                   > Iteration number 
@@ -278,8 +278,9 @@ class Logger():
 
         loss = { "value_loss_per_update": stats["value_loss"]}
         loss["action_loss_per_update"] = stats["action_loss"]
-        self.plot_tensorboard(loss, only=["value_loss_per_update", "action_loss_per_update"])        
-
+        self.plot_tensorboard(loss, only=["value_loss_per_update", "action_loss_per_update"])
+        if not commActions is None:
+            self.plot_tensorboard({'avg_comm_action':commActions}, only=['avg_comm_action'])        
         for key in self.log_keys: self.batch_average_stats[key] += sum([inf[key] for inf in terminal_t_info])
         # self.batch_average_stats["total_ep_global_r"] += sum([inf["total_ep_global_r"] for inf in terminal_t_info]) 
         # self.batch_average_stats["total_avg_agent_r"] += sum([inf["total_avg_agent_r"] for inf in terminal_t_info]) 
