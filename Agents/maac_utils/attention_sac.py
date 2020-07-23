@@ -58,8 +58,8 @@ class AttentionSAC(object):
         self.target_critic = AttentionCritic(sa_size, hidden_dim=critic_hidden_dim,
                                              attend_heads=attend_heads, base_policy_type=self.base_policy_type)
         hard_update(self.target_critic, self.critic)
-        self.critic_optimizer = Adam(self.critic.parameters(), lr=q_lr,
-                                     weight_decay=1e-3)
+        self.critic_optimizer = Adam(self.critic.parameters(), lr=q_lr)
+                                   #  weight_decay=1e-3)
         self.agent_init_params = agent_init_params
         self.gamma = gamma
         self.tau = tau
@@ -122,7 +122,7 @@ class AttentionSAC(object):
         q_loss.backward()
         self.critic.scale_shared_grads()
         grad_norm = torch.nn.utils.clip_grad_norm(
-            self.critic.parameters(), 10 * self.nagents)
+            self.critic.parameters(), 40 * self.nagents)
         self.critic_optimizer.step()
         self.critic_optimizer.zero_grad()
 
