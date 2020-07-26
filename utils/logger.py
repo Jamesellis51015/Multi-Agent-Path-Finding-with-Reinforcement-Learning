@@ -75,7 +75,7 @@ class Maac_Logger():
 
         self.log_keys = ['total_steps', 'total_rewards', \
          'total_agent_collisions', 'total_obstacle_collisions',\
-         'total_avg_agent_r', 'total_ep_global_r', 'agent_dones']
+         'total_avg_agent_r', 'total_ep_global_r', 'agent_dones', "all_agents_on_goal"]
         for i,inf in enumerate(info):
          # print("Logging ep: {}".format(episode+i))
           for key in self.log_keys:
@@ -266,7 +266,7 @@ class Logger():
 
         if len(self.batch_average_stats.keys()) == 0 and self.iterations == 0: 
             #self.log_keys = terminal_t_info[0].keys()
-            self.log_keys = ['total_steps', 'terminate', 'total_rewards', 'total_agent_collisions', 'total_obstacle_collisions', 'total_avg_agent_r', 'total_ep_global_r', 'agent_dones']
+            self.log_keys = ['total_steps', 'terminate', 'total_rewards', 'total_agent_collisions', 'total_obstacle_collisions', 'total_avg_agent_r', 'total_ep_global_r', 'agent_dones',"all_agents_on_goal"]
 
             set_dict_keys(self.batch_average_stats,self.log_keys)
         if len(terminal_t_info) == 0:
@@ -344,12 +344,14 @@ class Logger():
         #clip.write_gif(self.render_dir + "/render_" + str(episode) + '.gif')
         clip.write_videofile(self.render_dir + "/render_" + end + '.mp4')
 
-    def checkpoint_policy(self):
+    def checkpoint_policy(self, append_iteration_nr = True):
         if self.iterations > self.checkpoint_counter * self.args.checkpoint_frequency:
             self.checkpoint_counter += 1
             
-
-            checkpoint_path = self.checkpoint_dir + "/checkpoint_" + str(self.checkpoint_counter)
+            if append_iteration_nr:
+                checkpoint_path = self.checkpoint_dir + "/checkpoint_" + str(self.iterations)
+            else:
+                checkpoint_path = self.checkpoint_dir + "/checkpoint_" + str(self.checkpoint_counter)
 
             if self.previous_checkpoint_dir != None and self.args.replace_checkpoints:
                 os.remove(self.previous_checkpoint_dir)
