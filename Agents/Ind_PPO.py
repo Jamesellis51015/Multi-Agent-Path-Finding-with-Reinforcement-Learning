@@ -36,7 +36,7 @@ def run(args):
             args.ppo_hidden_dim, args.ppo_eps_clip, args.ppo_entropy_coeff, args.ppo_recurrent,
             args.ppo_heur_block)
     buff.init_model(ppo)
-    logger = Logger(args, "No summary", "no policy summary", None)
+    logger = Logger(args, "No summary", "no policy summary", ppo)
 
     obs = env.reset()
     if args.ppo_recurrent:
@@ -94,7 +94,7 @@ def run(args):
         stats["num_timesteps"] = len(infos)
         terminal_t_info = [inf for inf in infos if inf["terminate"]]
         stats["num_episodes"] = len(terminal_t_info)
-        logger.log(stats, terminal_t_info, render_frames, checkpoint=False)
+        logger.log(stats, terminal_t_info, render_frames, checkpoint=True)
         render_frames = []
         render_cntr = 0
 

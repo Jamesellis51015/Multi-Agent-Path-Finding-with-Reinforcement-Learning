@@ -11,6 +11,7 @@ class CNN_Base_Old(nn.Module):
     def __init__(self, input_dim, hidden_dim= 120, nonlin = F.leaky_relu):
         super().__init__()
         self.nonlin = nonlin
+        self.hidden_dim = hidden_dim
         #For strides of 1:
         (channels, d1, d2) =  input_dim
         k1 = 2
@@ -114,6 +115,22 @@ def make_base_policy(policy_type, double_obs_space = False):
             base_policy = CNN_Base_Old
         elif policy_type == "cnn_new":
             base_policy = CNN_Base_New
+        elif policy_type == "primal1":
+            base_policy = PRIMAL_Base
+        elif policy_type == "primal2":
+            base_policy = PRIMAL_Base2
+        elif policy_type == "primal2_2":
+            base_policy = PRIMAL_Base2_2
+        elif policy_type == "primal3":
+            base_policy = PRIMAL_Base3
+        elif policy_type == "primal4":
+            base_policy = PRIMAL_Base4
+        elif policy_type == "primal5":
+            base_policy = PRIMAL_Base5
+        elif policy_type == "primal6":
+            base_policy = PRIMAL_Base6
+        elif policy_type == "primal7":
+            base_policy = PRIMAL_Base7
         else:
             raise Exception("Base policy type not implemented")
         return base_policy
@@ -220,3 +237,431 @@ def make_base_policy(policy_type, double_obs_space = False):
     #         init_val = 0.0
     #         return torch.tensor([[init_val for _ in range(self.comm_out)]], requires_grad=True)
     # return [Actor, Critic, CommNet]
+
+
+
+
+
+##################################
+
+
+
+
+class PRIMAL_Base(nn.Module):
+    def __init__(self, input_dim, hidden_dim=None, nonlin = None):
+        self.hidden_dim = hidden_dim
+        self.nonlin = nonlin
+        super().__init__()
+        (channels, d1, d2) =  input_dim
+        k = 3
+        p=1
+        self.c1 = nn.Conv2d(channels, 128, k, padding=p)
+        d = d1 #assume square image
+        d = (d+2*p - (k-1) - 1)/1 + 1
+        self.c2 = nn.Conv2d(128, 128, k, padding=p)
+        self.c3 = nn.Conv2d(128, 128, k, padding=p)
+        self.mp1 = nn.MaxPool2d(2,2)
+        d = (d-(2-1) - 1)/2 + 1
+        self.c4 = nn.Conv2d(128, 256, k, padding=p)
+        self.c5 = nn.Conv2d(256, 256, k, padding=p)
+        self.c6 = nn.Conv2d(256, 128, k, padding=p)
+        self.mp2 = nn.MaxPool2d(3,2)
+        k=2
+        self.c7 = nn.Conv2d(128, 500, k)
+
+
+        self.flat_cnn_out_size = 500
+        self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
+    
+    def forward(self, x):
+        batch_size = x.size(0)
+
+        x = self.c1(x)
+        x = F.relu(x)
+        x = self.c2(x)
+        x = F.relu(x)
+        x = self.c3(x)
+        x = F.relu(x)
+        x = self.mp1(x)
+        x = self.c4(x)
+        x = F.relu(x)
+        x = self.c5(x)
+        x = F.relu(x)
+        x = self.c6(x)
+        x = F.relu(x)
+        x = self.mp2(x)
+        x = self.c7(x)
+        x = F.relu(x)
+
+        x = x.reshape((batch_size,-1))
+        x = self.fc1(x)
+        x = F.relu(x)
+        return x
+
+
+class PRIMAL_Base2(nn.Module):
+    def __init__(self, input_dim, hidden_dim=None, nonlin = None):
+        self.hidden_dim = hidden_dim
+        self.nonlin = nonlin
+        super().__init__()
+        (channels, d1, d2) =  input_dim
+        k = 3
+        p=1
+        self.c1 = nn.Conv2d(channels, 128, k, padding=p)
+        d = d1 #assume square image
+        d = (d+2*p - (k-1) - 1)/1 + 1
+        self.c2 = nn.Conv2d(128, 128, k, padding=p)
+        self.c3 = nn.Conv2d(128, 128, k, padding=p)
+        self.mp1 = nn.MaxPool2d(3,1)
+        d = (d-(2-1) - 1)/2 + 1
+        self.c4 = nn.Conv2d(128, 256, k, padding=p)
+        self.c5 = nn.Conv2d(256, 256, k, padding=p)
+        self.c6 = nn.Conv2d(256, 128, k, padding=p)
+        self.mp2 = nn.MaxPool2d(3,2)
+        k=2
+        self.c7 = nn.Conv2d(128, 500, k)
+
+        self.flat_cnn_out_size = 500
+        self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
+    
+    def forward(self, x):
+        batch_size = x.size(0)
+        #x = self.model(x)
+
+        x = self.c1(x)
+        x = F.relu(x)
+        x = self.c2(x)
+        x = F.relu(x)
+        x = self.c3(x)
+        x = F.relu(x)
+        x = self.mp1(x)
+        x = self.c4(x)
+        x = F.relu(x)
+        x = self.c5(x)
+        x = F.relu(x)
+        x = self.c6(x)
+        x = F.relu(x)
+        x = self.mp2(x)
+        x = self.c7(x)
+        x = F.relu(x)
+
+        x = x.reshape((batch_size,-1))
+        x = self.fc1(x)
+        x = F.relu(x)
+        return x
+
+class PRIMAL_Base2_2(nn.Module):
+    def __init__(self, input_dim, hidden_dim=None, nonlin = None):
+        self.hidden_dim = hidden_dim
+        self.nonlin = nonlin
+        super().__init__()
+        (channels, d1, d2) =  input_dim
+        k = 3
+        p=1
+        self.c1 = nn.Conv2d(channels, 128, k, padding=p)
+        d = d1 #assume square image
+        d = (d+2*p - (k-1) - 1)/1 + 1
+        self.c2 = nn.Conv2d(128, 128, k, padding=p)
+        self.c3 = nn.Conv2d(128, 128, k, padding=p)
+        self.mp1 = nn.MaxPool2d(3,1)
+        d = (d-(2-1) - 1)/2 + 1
+        self.c4 = nn.Conv2d(128, 256, k, padding=p)
+        self.c5 = nn.Conv2d(256, 256, k, padding=p)
+        self.c6 = nn.Conv2d(256, 128, k, padding=p)
+        self.mp2 = nn.MaxPool2d(3,2)
+        k=1
+        self.c7 = nn.Conv2d(128, 500, k)
+
+        self.flat_cnn_out_size = 500
+        self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
+    
+    def forward(self, x):
+        batch_size = x.size(0)
+        #x = self.model(x)
+
+        x = self.c1(x)
+        x = F.relu(x)
+        x = self.c2(x)
+        x = F.relu(x)
+        x = self.c3(x)
+        x = F.relu(x)
+        x = self.mp1(x)
+        x = self.c4(x)
+        x = F.relu(x)
+        x = self.c5(x)
+        x = F.relu(x)
+        x = self.c6(x)
+        x = F.relu(x)
+        x = self.mp2(x)
+        x = self.c7(x)
+        x = F.relu(x)
+
+        x = x.reshape((batch_size,-1))
+        x = self.fc1(x)
+        x = F.relu(x)
+        return x
+
+class PRIMAL_Base3(nn.Module):
+    def __init__(self, input_dim, hidden_dim=None, nonlin = None):
+        self.hidden_dim = hidden_dim
+        self.nonlin = nonlin
+        super().__init__()
+        (channels, d1, d2) =  input_dim
+        k = 3
+        p=1
+        self.c1 = nn.Conv2d(channels, 128, k, padding=p)
+        d = d1 #assume square image
+        d = (d+2*p - (k-1) - 1)/1 + 1
+        self.c2 = nn.Conv2d(128, 128, k, padding=p)
+        self.c3 = nn.Conv2d(128, 128, k, padding=p)
+        self.mp1 = nn.MaxPool2d(3,1)
+        d = (d-(2-1) - 1)/2 + 1
+        self.c4 = nn.Conv2d(128, 256, k, padding=p)
+        self.c5 = nn.Conv2d(256, 256, 2, padding=0)
+        self.c6 = nn.Conv2d(256, 128, 2, padding=0)
+        #self.mp2 = nn.MaxPool2d(3,2)
+        #k=2
+        self.c7 = nn.Conv2d(128, 500, 3)
+
+        self.flat_cnn_out_size = 500
+        self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
+    
+    def forward(self, x):
+        batch_size = x.size(0)
+        #x = self.model(x)
+
+        x = self.c1(x)
+        x = F.relu(x)
+        x = self.c2(x)
+        x = F.relu(x)
+        x = self.c3(x)
+        x = F.relu(x)
+        x = self.mp1(x)
+        x = self.c4(x)
+        x = F.relu(x)
+        x = self.c5(x)
+        x = F.relu(x)
+        x = self.c6(x)
+        x = F.relu(x)
+       # x = self.mp2(x)
+        x = self.c7(x)
+        x = F.relu(x)
+
+        x = x.reshape((batch_size,-1))
+        x = self.fc1(x)
+        x = F.relu(x)
+        return x
+
+
+class PRIMAL_Base4(nn.Module):
+    def __init__(self, input_dim, hidden_dim=None, nonlin = None):
+        self.hidden_dim = hidden_dim
+        self.nonlin = nonlin
+        super().__init__()
+        (channels, d1, d2) =  input_dim
+        k = 3
+        p=1
+        self.c1 = nn.Conv2d(channels, 128, k, padding=p)
+        d = d1 #assume square image
+        d = (d+2*p - (k-1) - 1)/1 + 1
+        self.c2 = nn.Conv2d(128, 128, k, padding=p)
+        self.c3 = nn.Conv2d(128, 128, k, padding=p)
+        self.mp1 = nn.MaxPool2d(3,1)
+        d = (d-(2-1) - 1)/2 + 1
+        self.c4 = nn.Conv2d(128, 256, k, padding=p)
+        self.c5 = nn.Conv2d(256, 256, k, padding=p)
+        self.c6 = nn.Conv2d(256, 128, k, padding=p)
+        self.mp2 = nn.MaxPool2d(3,1)
+        k=3
+        self.c7 = nn.Conv2d(128, 500, k)
+
+        self.flat_cnn_out_size = 500
+        self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
+    
+    def forward(self, x):
+        batch_size = x.size(0)
+        #x = self.model(x)
+
+        x = self.c1(x)
+        x = F.relu(x)
+        x = self.c2(x)
+        x = F.relu(x)
+        x = self.c3(x)
+        x = F.relu(x)
+        x = self.mp1(x)
+        x = self.c4(x)
+        x = F.relu(x)
+        x = self.c5(x)
+        x = F.relu(x)
+        x = self.c6(x)
+        x = F.relu(x)
+        x = self.mp2(x)
+        x = self.c7(x)
+        x = F.relu(x)
+
+        x = x.reshape((batch_size,-1))
+        x = self.fc1(x)
+        x = F.relu(x)
+        return x
+
+class PRIMAL_Base5(nn.Module):
+    def __init__(self, input_dim, hidden_dim=None, nonlin = None):
+        self.hidden_dim = hidden_dim
+        self.nonlin = nonlin
+        super().__init__()
+        (channels, d1, d2) =  input_dim
+        k = 3
+        p=1
+        self.c1 = nn.Conv2d(channels, 128, k, padding=p)
+        d = d1 #assume square image
+        d = (d+2*p - (k-1) - 1)/1 + 1
+        self.c2 = nn.Conv2d(128, 128, k, padding=p)
+        self.c3 = nn.Conv2d(128, 128, k, padding=p)
+        self.mp1 = nn.MaxPool2d(3,1)
+        d = (d-(2-1) - 1)/2 + 1
+        self.c4 = nn.Conv2d(128, 256, k, padding=p)
+        self.c5 = nn.Conv2d(256, 256, k, padding=p)
+        self.c6 = nn.Conv2d(256, 128, k, padding=p)
+        self.mp2 = nn.MaxPool2d(3,2)
+        k=2
+        self.c7 = nn.Conv2d(128, self.hidden_dim, k)
+
+        self.flat_cnn_out_size = self.hidden_dim
+        self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
+    
+    def forward(self, x):
+        batch_size = x.size(0)
+        #x = self.model(x)
+
+        x = self.c1(x)
+        x = F.relu(x)
+        x = self.c2(x)
+        x = F.relu(x)
+        x = self.c3(x)
+        x = F.relu(x)
+        x = self.mp1(x)
+        x = self.c4(x)
+        x = F.relu(x)
+        x = self.c5(x)
+        x = F.relu(x)
+        x = self.c6(x)
+        x = F.relu(x)
+        x = self.mp2(x)
+        x = self.c7(x)
+        x = F.relu(x)
+
+        x = x.reshape((batch_size,-1))
+        x = self.fc1(x)
+        x = F.relu(x)
+        return x
+
+class PRIMAL_Base6(nn.Module): #For env size  = 5
+    def __init__(self, input_dim, hidden_dim=None, nonlin = None, cat_end = None):
+        self.hidden_dim = hidden_dim
+        self.nonlin = nonlin
+        super().__init__()
+        (channels, d1, d2) =  input_dim
+        k = 2
+        p=0
+        self.c1 = nn.Conv2d(channels, 128, k, padding=p)
+        d = d1 #assume square image
+        d = (d+2*p - (k-1) - 1)/1 + 1
+        self.c2 = nn.Conv2d(128, 128, k, padding=p)
+        self.c3 = nn.Conv2d(128, 128, k, padding=p)
+        # self.mp1 = nn.MaxPool2d(3,1)
+        # d = (d-(2-1) - 1)/2 + 1
+        # self.c4 = nn.Conv2d(128, 256, k, padding=p)
+        # self.c5 = nn.Conv2d(256, 256, k, padding=p)
+        # self.c6 = nn.Conv2d(256, 128, k, padding=p)
+        # self.mp2 = nn.MaxPool2d(3,2)
+        k=2
+        self.c7 = nn.Conv2d(128, self.hidden_dim, k)
+
+        self.flat_cnn_out_size = self.hidden_dim
+        if cat_end is None:
+            self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
+        else:
+            self.fc1 = nn.Linear(self.flat_cnn_out_size + cat_end, hidden_dim)
+    
+    def forward(self, x, cat_end = None):
+        batch_size = x.size(0)
+        #x = self.model(x)
+
+        x = self.c1(x)
+        x = F.relu(x)
+        x = self.c2(x)
+        x = F.relu(x)
+        x = self.c3(x)
+        x = F.relu(x)
+        # x = self.mp1(x)
+        # x = self.c4(x)
+        # x = F.relu(x)
+        # x = self.c5(x)
+        # x = F.relu(x)
+        # x = self.c6(x)
+        # x = F.relu(x)
+        # x = self.mp2(x)
+        x = self.c7(x)
+        x = F.relu(x)
+
+        x = x.reshape((batch_size,-1))
+        if cat_end is None:
+            x = self.fc1(x)
+        else:
+            x = self.fc1(torch.cat([x,cat_end], dim=1))
+        x = F.relu(x)
+        return x
+
+class PRIMAL_Base7(nn.Module): #For env size  = 7
+    def __init__(self, input_dim, hidden_dim=None, nonlin = None):
+        self.hidden_dim = hidden_dim
+        self.nonlin = nonlin
+        super().__init__()
+        (channels, d1, d2) =  input_dim
+        k = 2
+        p=0
+        self.c1 = nn.Conv2d(channels, 128, k, padding=p)
+        d = d1 #assume square image
+        d = (d+2*p - (k-1) - 1)/1 + 1
+        self.c2 = nn.Conv2d(128, 128, k, padding=p)
+        self.c3 = nn.Conv2d(128, 128, k, padding=p)
+        self.c8 = nn.Conv2d(128, 128, k, padding=p)
+        # self.mp1 = nn.MaxPool2d(3,1)
+        # d = (d-(2-1) - 1)/2 + 1
+        # self.c4 = nn.Conv2d(128, 256, k, padding=p)
+        # self.c5 = nn.Conv2d(256, 256, k, padding=p)
+        # self.c6 = nn.Conv2d(256, 128, k, padding=p)
+        # self.mp2 = nn.MaxPool2d(3,2)
+        k=3
+        self.c7 = nn.Conv2d(128, self.hidden_dim, k)
+
+        self.flat_cnn_out_size = self.hidden_dim
+        self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
+    
+    def forward(self, x):
+        batch_size = x.size(0)
+        #x = self.model(x)
+
+        x = self.c1(x)
+        x = F.relu(x)
+        x = self.c2(x)
+        x = F.relu(x)
+        x = self.c3(x)
+        x = F.relu(x)
+        x = self.c8(x)
+        x = F.relu(x)
+        # x = self.mp1(x)
+        # x = self.c4(x)
+        # x = F.relu(x)
+        # x = self.c5(x)
+        # x = F.relu(x)
+        # x = self.c6(x)
+        # x = F.relu(x)
+        # x = self.mp2(x)
+        x = self.c7(x)
+        x = F.relu(x)
+
+        x = x.reshape((batch_size,-1))
+        x = self.fc1(x)
+        x = F.relu(x)
+        return x

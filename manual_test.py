@@ -210,8 +210,8 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser("Testing")
 
         #Environment:
-        parser.add_argument("--map_shape", default = (5,5), type=object)
-        parser.add_argument("--n_agents", default = 2, type=int)
+        parser.add_argument("--map_shape", default = (10,10), type=object)
+        parser.add_argument("--n_agents", default = 6, type=int)
         parser.add_argument("--env_name", default = name, type= str)
         parser.add_argument("--use_default_rewards", default=True, type=bool)
         parser.add_argument("--obj_density", default = 0.4, type=int)

@@ -309,7 +309,12 @@ class PPO():
         "critic_state_dict": self.critics[0].state_dict(),
         "actor_state_dict": self.actors[0].state_dict()}
         return model_info
-        
+    
+    def save(self, path):
+        model_inf = self.get_model_dict()
+        torch.save(model_inf, path)
+
+
         
         
 

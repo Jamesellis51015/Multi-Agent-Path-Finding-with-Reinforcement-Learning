@@ -221,19 +221,20 @@ class AttentionCritic(nn.Module):
             #dim_cat = [hldr + adim]
             base = MlpCritEncoder(sdim_h, adim, hidden_dim, nonlin= F.leaky_relu)
         else:
-            class CnnCritEncoder(PolicyBase):
-                def __init__(self, sdim, adim, hidden_dim):
-                    super(CnnCritEncoder, self).__init__(sdim, hidden_dim)
-                    self.fc1 = nn.Linear(self.flat_cnn_out_size + adim, hidden_dim)
-                def forward(self, obs, a):
-                    batch_size = obs.size()[0]
-                    x = F.leaky_relu(self.c1(obs))
-                    x = F.leaky_relu(self.c2(x))
-                    x = x.reshape(batch_size, -1)
-                    x2 = torch.cat([x,a], dim = 1)
-                    x2 = F.leaky_relu(self.fc1(x2))
-                    return x2
-            base = CnnCritEncoder(sdim, adim, hidden_dim)
+            base = PolicyBase(sdim,hidden_dim=hidden_dim, cat_end = adim)
+            # class CnnCritEncoder(PolicyBase):
+            #     def __init__(self, sdim, adim, hidden_dim):
+            #         super(CnnCritEncoder, self).__init__(sdim, hidden_dim)
+            #         self.fc1 = nn.Linear(self.flat_cnn_out_size + adim, hidden_dim)
+            #     def forward(self, obs, a):
+            #         batch_size = obs.size()[0]
+            #         x = F.leaky_relu(self.c1(obs))
+            #         x = F.leaky_relu(self.c2(x))
+            #         x = x.reshape(batch_size, -1)
+            #         x2 = torch.cat([x,a], dim = 1)
+            #         x2 = F.leaky_relu(self.fc1(x2))
+            #         return x2
+            # base = CnnCritEncoder(sdim, adim, hidden_dim)
         return base
 
     def make_state_encoder(self, sdim,hidden_dim):

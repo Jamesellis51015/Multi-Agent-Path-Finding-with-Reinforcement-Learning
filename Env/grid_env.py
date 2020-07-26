@@ -303,7 +303,8 @@ class Grid_Env(Grid):
             'total_rewards': 0,  #Total reward is averaged over the number of agents
             'total_agent_collisions': 0,
             'total_obstacle_collisions': 0,
-            'agents_done': 0,
+            'agent_dones': 0,
+            'all_agents_on_goal': 0,
             'total_avg_agent_r':0,
             'total_ep_global_r':0,
             'terminal_observation': None,
@@ -627,6 +628,12 @@ class Grid_Env(Grid):
         for collision in collisions["obs_col"].values():
             if collision: self.info["total_obstacle_collisions"] += 1
         self.info["agent_dones"] = sum([d for d in dones.values()]) / len([d for d in dones.values()])
+        
+        if all([d for d in dones.values()]):
+            self.info["all_agents_on_goal"] = 1
+        else:
+            self.info["all_agents_on_goal"] = 0
+
 
         #return (obs, rewards, dones, collisions, self.info)
         self.info["step_collisions"] = collisions

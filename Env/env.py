@@ -31,6 +31,7 @@ class Narrow_CorridorV0(Grid_Env):
         finish_episode = 1
     def __init__(self, args, ind = None):
         import __main__
+        raise Exception("get_rewads() has not been changed to return isdone instead of overall_dones")
         curr_dir = os.path.dirname(__file__)
         env_folder = curr_dir + r"/custom/narrowCorridor/"
         all_files = listdir(env_folder)
@@ -196,13 +197,13 @@ class Independent_NavigationV0(Grid_Env):
                 else:
                     rewards[handle] = self.rewards.step
                     isdone[handle] = False
-        if sum(isdone.values()) == len(self.agents):
-            for handle in self.agents.keys(): 
-                rewards[handle] = self.rewards.finish_episode
-                overall_dones[handle] = True
-        else:
-            for i, agnt in self.agents.items():
-                overall_dones[i] = False
+        # if sum(isdone.values()) == len(self.agents):
+        #     for handle in self.agents.keys(): 
+        #         rewards[handle] = self.rewards.finish_episode
+        #         overall_dones[handle] = True
+        # else:
+        #     for i, agnt in self.agents.items():
+        #         overall_dones[i] = False
 
         if collisions['obs_col']:
             for key, val in collisions['obs_col'].items():
@@ -210,7 +211,8 @@ class Independent_NavigationV0(Grid_Env):
         if collisions['agent_col']:
             for key, val in collisions['agent_col'].items():
                 if val: rewards[key] += self.rewards.agent_collision
-        return overall_dones, rewards
+        return isdone, rewards
+        #return overall_dones, rewards
     
     def get_global_cooperative_rewards(self, collisions):
         r = {i:0 for i, a in self.agents.items()}
@@ -329,13 +331,13 @@ class Independent_NavigationV1(Grid_Env):
                 else:
                     rewards[handle] = self.rewards.step
                     isdone[handle] = False
-        if sum(isdone.values()) == len(self.agents):
-            for handle in self.agents.keys(): 
-                rewards[handle] = self.rewards.finish_episode
-                overall_dones[handle] = True
-        else:
-            for i, agnt in self.agents.items():
-                overall_dones[i] = False
+        # if sum(isdone.values()) == len(self.agents):
+        #     for handle in self.agents.keys(): 
+        #         rewards[handle] = self.rewards.finish_episode
+        #         overall_dones[handle] = True
+        # else:
+        #     for i, agnt in self.agents.items():
+        #         overall_dones[i] = False
 
         if collisions['obs_col']:
             for key, val in collisions['obs_col'].items():
@@ -350,7 +352,7 @@ class Independent_NavigationV1(Grid_Env):
                 if block:
                     rewards[key] += self.rewards.blocking
 
-        return overall_dones, rewards
+        return isdone, rewards
     
     def get_global_cooperative_rewards(self, collisions):
         r = {i:0 for i, a in self.agents.items()}
@@ -585,6 +587,7 @@ class Cooperative_Navigation_V0(Grid_Env):
     def __init__(self, args):
         #Make default env arguments if not exist in args
         #initialize base Grid_Env
+        raise Exception("get_rewads() has not been changed to return isdone instead of overall_dones")
         self.description = "Agents have cover a number of landmarks (goals) equal" + \
             " to the number of agents whilst avoiding collisions. It" + \
             "does not matter which agent covers which landmark. No obstacles"
@@ -729,7 +732,6 @@ class Cooperative_Navigation_V1(Cooperative_Navigation_V0):
 # 
 
 class Independent_NavigationV4_1(Independent_NavigationV0):
-    '''A partially observable version of Independent navigation V0. Agents do not see other agent positions. '''
     class Rewards(): #For this Env this is global rewards
         step= -0.01
         object_collision = -0.015#-0.1
@@ -757,14 +759,14 @@ class Independent_NavigationV4_1(Independent_NavigationV0):
                 else:
                    # rewards[handle] = self.rewards.step
                     isdone[handle] = False
-        if sum(isdone.values()) == len(self.agents):
-            global_step_reward += self.rewards.finish_episode
-            for handle in self.agents.keys(): 
-               # rewards[handle] = self.rewards.finish_episode
-                overall_dones[handle] = True
-        else:
-            for i, agnt in self.agents.items():
-                overall_dones[i] = False
+        # if sum(isdone.values()) == len(self.agents):
+        #     global_step_reward += self.rewards.finish_episode
+        #     for handle in self.agents.keys(): 
+        #        # rewards[handle] = self.rewards.finish_episode
+        #         overall_dones[handle] = True
+        # else:
+        #     for i, agnt in self.agents.items():
+        #         overall_dones[i] = False
 
         if collisions['obs_col']:
             for key, val in collisions['obs_col'].items():
@@ -776,7 +778,7 @@ class Independent_NavigationV4_1(Independent_NavigationV0):
                 #if val: rewards[key] += self.rewards.agent_collision
         for handle, agent in self.agents.items():
             rewards[handle] = global_step_reward
-        return overall_dones, rewards
+        return isdone, rewards
 
 
 
@@ -784,7 +786,7 @@ class Independent_NavigationV4_2(Independent_NavigationV4_1):
     '''A partially observable version of Independent navigation V0. Agents do not see other agent positions. '''
     class Rewards(): #For this Env this is global rewards
         step= -0.01
-        object_collision = -0.015#-0.1
+        object_collision = 0.0 #-0.015#-0.1  #Changed to 0.0
         agent_collision = -0.4
         goal_reached= 0.0#0.01
         finish_episode = 1

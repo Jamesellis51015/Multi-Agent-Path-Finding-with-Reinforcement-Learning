@@ -8,110 +8,87 @@ import copy
 Transition = namedtuple('Transition', ('h1', 'h2'))
 import math
 
+
+import torch.nn as nn
+import torch.nn.functional as F
+
+
 from sklearn.model_selection import ParameterGrid
 if __name__ == "__main__":
 
-    def get_events_paths(base_folder, remove_duplicates = True):
-        '''Return dict of {exp_name: event_file_path} '''
-        experiments = {}
-        tfeventstr = "events.out.tfevents"
-        for root, dirs, file in os.walk(base_folder, topdown=False):
-            for f in file:
-                if tfeventstr in f:
-                    name = root.split('/')[-1]
-                    if remove_duplicates and 'N' in name:
-                        hldr = name.split('_')[-1]
-                        num = int(hldr[1:])
-                        if num > 0:
-                            continue
-                    experiments[name] = os.path.join(root, f)
-        return experiments
 
-    filename = '/home/james/Desktop/Gridworld/test'
-    exp = get_events_paths(filename, True)
-    for k,v in exp.items():
-        print("key: {} \n val:{} \n\n".format(k, v))
-    # pos = {
-    #     0: [(0,0), (1,1), (2,2)],
-    #     1: [(3,3)],
-    #     2: [(4,4)],
-    #     3: [(5,5), (6,6)]
-    # }
+    class PRIMAL_Base(nn.Module):
+        def __init__(self, input_dim, hidden_dim=None, nonlin = None):
+            self.hidden_dim = hidden_dim
+            self.nonlin = nonlin
+            super().__init__()
+            (channels, d1, d2) =  input_dim
+            k = 3
+            p=1
 
-    # cominations = ParameterGrid(pos)
+            self.c1 = nn.Conv2d(channels, 128, k, padding=0)
+            d = d1 #assume square image
+            d = (d+2*p - (k-1) - 1)/1 + 1
+            self.c2 = nn.Conv2d(128, 128, k, padding=p)
+            self.c3 = nn.Conv2d(128, 128, k, padding=p)
+         #   self.mp1 = nn.MaxPool2d(2,2)
+            d = (d-(2-1) - 1)/2 + 1
+            self.c4 = nn.Conv2d(channels, 256, k, padding=p)
+            self.c5 = nn.Conv2d(channels, 256, k, padding=p)
+            self.c6 = nn.Conv2d(channels, 128, k, padding=p)
+         #   self.mp2 = nn.MaxPool2d(3,2)
+            k=2
+            self.c7 = nn.Conv2d(channels, 500, k)
 
-    # for c in cominations:
-    #     print(( c[0], c[1], c[2], c[3] ) )
+            # self.model = nn.Sequential(
+            #     self.c1,
+            #     nn.ReLU(),
+            #     self.c2,
+            #     nn.ReLU(),
+            #     self.c3,
+            #     nn.ReLU(),
+            #     self.mp1,
+            #     self.c4,
+            #     nn.ReLU(),
+            #     self.c5,
+            #     nn.ReLU(),
+            #     self.c6,
+            #     nn.ReLU(),
+            #     self.mp2,
+            # )
 
-    # a = [1,"a"]
-    # b = [2, "b"]
-    # p = list(zip(a,b))
-    # (c, d) = p
-    # print(d)
-
-    # for i in zip(a,b):
-    #     print(i)
-    # for i in a:
-    #     print(i)
-
-    # a.add(((1,2),(3,5)))
-    # print(a)
-    # a = set([1,2,])
-    # b = set([1,5,3])
-    # print(a==b)
-
-
-
-
-    # a = torch.rand(10,3)
-    # ind = np.arange(10)
-    # np.random.shuffle(ind)
-    # print(ind[0:3])
-    # ind = torch.from_numpy(ind)
-    # print(a)
-    # print(a[ind[0:3]])
-    # a = torch.tensor(5)
-    # b = torch.clamp(a, -1,4)
-    # print(b
-    # # )
-    # class myclass():
-    #     def __init__(self, flag1):
-    #         self.flag1 = flag1
-
-    #         if flag1:
-    #             def is_true(self):
-    #                 print("true")
-    #         else:
-    #             def is_false(self):
-    #                 print("flase")
-    # a = myclass(True)
-    # print(hasattr(a, "is_true"))
-    # print(hasattr(a, "is_false"))rs
-
-    # test = {1:1, 2:2}
-
-    # class Tester():
-    #     def __init__(self, a):
-    #         self.aref = a
-    # c = Tester(test)
-    # print(c.aref[1])
-    # test[1] = "dgsdg"
-    # print(c.aref[1])
+            #self.flat_cnn_out_size = 500
+            #self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
     
+        def forward(self, x):
+            batch_size = x.size(0)
+            #x = self.model(x)
 
-   
-    # c = {a : 1,
-    #     b: 2}
-    # print(c[(-1,-2)])
+            x1 = self.c1(x)
+            x = F.relu(x[0])
+            x = self.c2(x),
+            x = F.relu(x)
+            x = self.c3(x),
+            x = F.relu(x)
+            x = self.mp1(x),
+         #   x = F.relu(x)
+            x = self.c4(x),
+            x = F.relu(x)
+            x = self.c5(x),
+            x = F.relu(x)
+            x = self.c6(x),
+            x = F.relu(x)
+           x = self.mp2(x),
 
 
-    # f = '/home/desktop123/Documents/Academics/Code/Multiagent_Gridworld/TEST_walk'
-
-    # a = [i for i in os.walk(f)]
-
-    # print(a)
 
 
+            x = x.reshape((batch_size,-1))
+            return x
+
+    m = PRIMAL_Base((5,10,10))
+    t = torch.rand((1,5,10,10))
+    b = m.forward(t)
     
     
     # class t():

@@ -173,7 +173,7 @@ def run(config, logger0):
             model.prep_rollouts(device='cpu')
             #os.makedirs(run_dir / 'incremental', exist_ok=True)
             model.save(logger0.checkpoint_dir + '/checkpoint_' + str(ep_i //config.checkpoint_frequency) + '.pt')
-            model.save(logger0.checkpoint_dir + '/model.pt')
+          #  model.save(logger0.checkpoint_dir + '/model.pt')
 
         if ep_i % config.benchmark_frequency < config.maac_n_rollout_threads and ep_i != 0:
             benchmark(config, logger0, model, config.benchmark_num_episodes, config.benchmark_render_length, ep_i)

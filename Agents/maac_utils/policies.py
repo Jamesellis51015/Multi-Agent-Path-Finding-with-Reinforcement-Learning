@@ -57,12 +57,13 @@ def make_policy(policy_type):
             (num_in_pol, num_out_pol) = args
             self.nonlin = nonlin
             del kwargs["onehot_dim"]
-            super(ActorBase, self).__init__(num_in_pol, **kwargs)
+            super(ActorBase, self).__init__(num_in_pol,nonlin=nonlin, **kwargs)
             h_dim = kwargs["hidden_dim"]
             self.start_layer = nn.Linear(h_dim, h_dim)
             self.out_layer = nn.Linear(h_dim, num_out_pol)
         def forward(self, obs):
-            out1 = self.nonlin(super(ActorBase, self).forward(obs.float()))
+            #out1 = self.nonlin(super(ActorBase, self).forward(obs.float()))
+            out1 = super(ActorBase, self).forward(obs.float())
             out2 = self.out_layer(out1)
             return out2
 
