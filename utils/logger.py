@@ -112,7 +112,7 @@ class Maac_Logger():
         #prefix = "bench_"+ str(episode)
         self.log_keys = ['total_steps', 'total_rewards', \
          'total_agent_collisions', 'total_obstacle_collisions',\
-         'total_avg_agent_r', 'total_ep_global_r', 'agent_dones']
+         'total_avg_agent_r', 'total_ep_global_r', 'agent_dones',"all_agents_on_goal"]
         self.log_names = self.log_keys
         # for i,key in enumerate(self.log_keys): 
         #     self.log_names.append(prefix + key)
@@ -234,7 +234,7 @@ class Logger():
         #prefix = "bench_"+ str(episode)
         self.log_keys = ['total_steps', 'total_rewards', \
          'total_agent_collisions', 'total_obstacle_collisions',\
-         'total_avg_agent_r', 'total_ep_global_r', 'agent_dones']
+         'total_avg_agent_r', 'total_ep_global_r', 'agent_dones', "all_agents_on_goal"]
         self.log_names = self.log_keys
         # for i,key in enumerate(self.log_keys): 
         #     self.log_names.append(prefix + key)

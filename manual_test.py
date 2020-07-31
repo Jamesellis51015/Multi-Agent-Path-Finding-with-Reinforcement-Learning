@@ -104,24 +104,24 @@ def test_mstar():
             r = env.render(mode = mode)
 
 
-def test_corridor(name = 'narrow_corridor-v0'):
+def test_corridor(name = 'narrow_corridor-v0', index = None):
 
     version = int(name[-1])
-    i = 8
+    i = index
     mode = "human"
     parser = argparse.ArgumentParser("Testing")
 
     #Environment:
-    parser.add_argument("--map_shape", default = (7,7), type=object)
-    parser.add_argument("--n_agents", default = 2, type=int)
+    parser.add_argument("--map_shape", default = (12,12), type=object)
+    parser.add_argument("--n_agents", default = 12, type=int)
     parser.add_argument("--env_name", default = name, type= str)
-    parser.add_argument("--use_default_rewards", default=True, type=bool)
+    #parser.add_argument("--use_default_rewards", default=True, type=bool)
     parser.add_argument("--obj_density", default = 0.3, type=int)
 
     args = parser.parse_args()
-    env = make_env(args)
-    #from Env.env import Narrow_CorridorV0 
-    #env = Narrow_CorridorV0(args, ind=i)
+   # env = make_env(args)
+    from Env.env import Narrow_CorridorV0 
+    env = Narrow_CorridorV0(args, ind=i)
     print(env.summary())
     print("#################")
     print("Observation space: {}".format(env.observation_space))
@@ -210,16 +210,23 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser("Testing")
 
         #Environment:
-        parser.add_argument("--map_shape", default = (10,10), type=object)
-        parser.add_argument("--n_agents", default = 6, type=int)
+        parser.add_argument("--map_shape", default = (5,5), type=object)
+        parser.add_argument("--n_agents", default = 4, type=int)
         parser.add_argument("--env_name", default = name, type= str)
         parser.add_argument("--use_default_rewards", default=True, type=bool)
-        parser.add_argument("--obj_density", default = 0.4, type=int)
+        parser.add_argument("--obj_density", default = 0.2, type=int)
         parser.add_argument("--view_d", default = 2, type=int)
         parser.add_argument("--ppo_recurrent", default= False, action='store_true')
         parser.add_argument("--ppo_heur_block", default= False, action='store_true')
         parser.add_argument("--ppo_heur_valid_act", default= False, action='store_true')
         parser.add_argument("--ppo_heur_no_prev_state", default= False, action='store_true')
+
+        parser.add_argument("--use_custom_rewards", default = False, action='store_true')
+        parser.add_argument("--step_r", default = -10, type=float)
+        parser.add_argument("--agent_collision_r", default = -10, type=float)
+        parser.add_argument("--obstacle_collision_r", default = -10, type=float)
+        parser.add_argument("--goal_reached_r", default = -10, type=float)
+        parser.add_argument("--finish_episode_r", default = -10, type=float)
 
         args = parser.parse_args()
         env = make_env(args)
@@ -422,10 +429,10 @@ if __name__ == "__main__":
 
     #name = 'independent_navigation-v4_1'
 
-    name = 'independent_navigation-v0'
-    test_IndNav(name)
+    # name = 'independent_navigation-v6_1'
+    # test_IndNav(name)
 
-   # test_corridor()
+    test_corridor(index=0)
 
    # test_mstar()
 

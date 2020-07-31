@@ -613,7 +613,7 @@ class PRIMAL_Base6(nn.Module): #For env size  = 5
         return x
 
 class PRIMAL_Base7(nn.Module): #For env size  = 7
-    def __init__(self, input_dim, hidden_dim=None, nonlin = None):
+    def __init__(self, input_dim, hidden_dim=None, nonlin = None, cat_end = None):
         self.hidden_dim = hidden_dim
         self.nonlin = nonlin
         super().__init__()
@@ -636,9 +636,15 @@ class PRIMAL_Base7(nn.Module): #For env size  = 7
         self.c7 = nn.Conv2d(128, self.hidden_dim, k)
 
         self.flat_cnn_out_size = self.hidden_dim
-        self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
+
+        if cat_end is None:
+            self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
+        else:
+            self.fc1 = nn.Linear(self.flat_cnn_out_size + cat_end, hidden_dim)
+
+        #self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
     
-    def forward(self, x):
+    def forward(self, x, cat_end = None):
         batch_size = x.size(0)
         #x = self.model(x)
 
@@ -662,6 +668,12 @@ class PRIMAL_Base7(nn.Module): #For env size  = 7
         x = F.relu(x)
 
         x = x.reshape((batch_size,-1))
-        x = self.fc1(x)
+
+        if cat_end is None:
+            x = self.fc1(x)
+        else:
+            x = self.fc1(torch.cat([x,cat_end], dim=1))
+
+        #x = self.fc1(x)
         x = F.relu(x)
         return x

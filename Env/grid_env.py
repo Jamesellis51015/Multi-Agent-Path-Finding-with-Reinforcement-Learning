@@ -258,7 +258,8 @@ class Grid_Env(Grid):
         if self.x_len != self.y_len:
             raise Exception("Currently only support square map shapes")
         super().__init__(self.x_len, self.y_len)
-        self.max_step = int(math.floor(self.x_len * self.y_len*1.5))
+        #self.max_step = int(math.floor(self.x_len * self.y_len*1.5))
+        self.max_step = int(math.floor((self.x_len * self.y_len)))
         self.step_count = 0
         #Agents:
         self.agents, self.goals = self._populate_grid(obj_map)

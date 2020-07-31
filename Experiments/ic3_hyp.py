@@ -1172,9 +1172,9 @@ def ic3_1G1(): #How valuable is communication: Same as E, but with cooperative n
 
         args.extend(["--render_rate", str(int(1e2))])
         args.extend(["--checkpoint_frequency", str(int(5e2))])
-        args.extend(["--benchmark_frequency", str(int(3000))])
-        args.extend(["--benchmark_num_episodes", str(int(10))])
-        args.extend(["--benchmark_render_length", str(int(20))])
+        args.extend(["--benchmark_frequency", str(int(1500))])
+        args.extend(["--benchmark_num_episodes", str(int(200))])
+        args.extend(["--benchmark_render_length", str(int(25))])
         args.extend(["--obj_density", str(param["obj_density"])])
 
         main.main(args)

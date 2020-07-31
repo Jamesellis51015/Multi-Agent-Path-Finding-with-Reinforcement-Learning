@@ -22,6 +22,14 @@ def main(args):
     parser.add_argument("--view_d", default = 2, type=int)
     parser.add_argument("--env_name", default = "cooperative_navigation-v0", type = str)
 
+    parser.add_argument("--use_custom_rewards", default = False, action='store_true')
+    parser.add_argument("--step_r", default = -10, type=float)
+    parser.add_argument("--agent_collision_r", default = -10, type=float)
+    parser.add_argument("--obstacle_collision_r", default = -10, type=float)
+    parser.add_argument("--goal_reached_r", default = -10, type=float)
+    parser.add_argument("--finish_episode_r", default = -10, type=float)
+
+
     #Policy:
     parser.add_argument("--policy", default="TEST2", type =str)
 

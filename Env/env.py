@@ -31,7 +31,7 @@ class Narrow_CorridorV0(Grid_Env):
         finish_episode = 1
     def __init__(self, args, ind = None):
         import __main__
-        raise Exception("get_rewads() has not been changed to return isdone instead of overall_dones")
+       # raise Exception("get_rewads() has not been changed to return isdone instead of overall_dones")
         curr_dir = os.path.dirname(__file__)
         env_folder = curr_dir + r"/custom/narrowCorridor/"
         all_files = listdir(env_folder)
@@ -97,7 +97,7 @@ class Narrow_CorridorV0(Grid_Env):
         if collisions['agent_col']:
             for key, val in collisions['agent_col'].items():
                 if val: rewards[key] += self.rewards.agent_collision
-        return overall_dones, rewards
+        return isdone, rewards
     
     def get_global_cooperative_rewards(self, collisions):
         r = {i:0 for i, a in self.agents.items()}
@@ -147,6 +147,18 @@ class Independent_NavigationV0(Grid_Env):
         self.clear_paths()
         #Set reward function, obsevation space etc
         self.rewards = self.Rewards()
+
+        if self.args.use_custom_rewards:
+            if self.args.step_r != -10:
+                self.rewards.step = self.args.step_r 
+            if self.args.agent_collision_r != -10:
+                self.rewards.agent_collision = self.args.agent_collision_r
+            if self.args.obstacle_collision_r != -10:
+                self.rewards.object_collision = self.args.obstacle_collision_r
+            if self.args.goal_reached_r != -10:
+                self.rewards.goal_reached = self.args.goal_reached_r
+            if self.args.finish_episode_r != -10:
+                self.rewards.finish_episode = self.args.finish_episode_r
         
         # if args.use_custom_rewards == True:
         #     self.rewards.step = args.reward_step
@@ -197,13 +209,13 @@ class Independent_NavigationV0(Grid_Env):
                 else:
                     rewards[handle] = self.rewards.step
                     isdone[handle] = False
-        # if sum(isdone.values()) == len(self.agents):
-        #     for handle in self.agents.keys(): 
-        #         rewards[handle] = self.rewards.finish_episode
-        #         overall_dones[handle] = True
-        # else:
-        #     for i, agnt in self.agents.items():
-        #         overall_dones[i] = False
+        if sum(isdone.values()) == len(self.agents):
+            for handle in self.agents.keys(): 
+                rewards[handle] = self.rewards.finish_episode
+                overall_dones[handle] = True
+        else:
+            for i, agnt in self.agents.items():
+                overall_dones[i] = False
 
         if collisions['obs_col']:
             for key, val in collisions['obs_col'].items():
@@ -606,6 +618,19 @@ class Cooperative_Navigation_V0(Grid_Env):
         self.clear_paths()
         #Set reward function, obsevation space etc
         self.rewards = self.Rewards()
+
+        if self.args.use_custom_rewards:
+            if self.args.step_r != -10:
+                self.rewards.step = self.args.step_r 
+            if self.args.agent_collision_r != -10:
+                self.rewards.agent_collision = self.args.agent_collision_r
+            if self.args.obstacle_collision_r != -10:
+                self.rewards.object_collision = self.args.obstacle_collision_r
+            if self.args.goal_reached_r != -10:
+                self.rewards.goal_reached = self.args.goal_reached_r
+            if self.args.finish_episode_r != -10:
+                self.rewards.finish_episode = self.args.finish_episode_r
+            
         
         # if args.use_custom_rewards == True:
         #     self.rewards.step = args.reward_step
@@ -747,7 +772,7 @@ class Independent_NavigationV4_1(Independent_NavigationV0):
         rewards = {}
         isdone = {}
         overall_dones = {}
-        global_step_reward = self.rewards.step * len(self.agents)
+        global_step_reward = self.rewards.step  * len(self.agents)
 
         for handle, agent in self.agents.items():
             for g in self.goals.values():
@@ -759,14 +784,14 @@ class Independent_NavigationV4_1(Independent_NavigationV0):
                 else:
                    # rewards[handle] = self.rewards.step
                     isdone[handle] = False
-        # if sum(isdone.values()) == len(self.agents):
-        #     global_step_reward += self.rewards.finish_episode
-        #     for handle in self.agents.keys(): 
-        #        # rewards[handle] = self.rewards.finish_episode
-        #         overall_dones[handle] = True
-        # else:
-        #     for i, agnt in self.agents.items():
-        #         overall_dones[i] = False
+        if sum(isdone.values()) == len(self.agents):
+            global_step_reward += self.rewards.finish_episode
+            for handle in self.agents.keys(): 
+               # rewards[handle] = self.rewards.finish_episode
+                overall_dones[handle] = True
+        else:
+            for i, agnt in self.agents.items():
+                overall_dones[i] = False
 
         if collisions['obs_col']:
             for key, val in collisions['obs_col'].items():
@@ -807,6 +832,142 @@ class Independent_NavigationV4_3(Independent_NavigationV4_1):
     def __init__(self, args):
         super().__init__(args)
         self.rewards = self.Rewards()
+
+
+class Independent_NavigationV5_1(Independent_NavigationV4_1):
+    ''' Single shared reward no penalties'''
+    class Rewards(): #For this Env this is global rewards
+        step= -0.1
+        object_collision = 0.0 #-0.015#-0.1  #Changed to 0.0
+        agent_collision = 0.0 #-0.4
+        goal_reached= 0.0#0.01
+        finish_episode = 2
+
+    def __init__(self, args):
+        super().__init__(args)
+        self.rewards = self.Rewards()
+
+class Independent_NavigationV5_2(Independent_NavigationV4_1):
+    ''' Single shared reward with penalties'''
+    class Rewards(): #For this Env this is global rewards
+        step= -0.1
+        object_collision = -0.05 
+        agent_collision = -0.4
+        goal_reached= 0.0#0.01
+        finish_episode = 2
+
+    def __init__(self, args):
+        super().__init__(args)
+        self.rewards = self.Rewards()
+
+class Independent_NavigationV6_1(Independent_NavigationV0):
+    ''' Increasing reward for each agent reaching goal'''
+    class Rewards(): #For this Env this is global rewards
+        step= -0.2
+        object_collision = -0.05 #-0.015#-0.1  #Changed to 0.0
+        agent_collision = -0.4
+        goal_reached= 0.05
+        finish_episode = 0.0
+
+    def __init__(self, args):
+        super().__init__(args)
+        self.rewards = self.Rewards()
+    
+    def get_rewards(self, collisions):
+        rewards = {}
+        isdone = {}
+        overall_dones = {}
+        global_step_reward = self.rewards.step * len(self.agents)
+
+        for handle, agent in self.agents.items():
+            for g in self.goals.values():
+                if g.pos == agent.pos and g.goal_id == agent.id:
+                    #global_step_reward += self.rewards.goal_reached
+                    #rewards[handle] = self.rewards.goal_reached
+                    isdone[handle] = True
+                    break
+                else:
+                   # rewards[handle] = self.rewards.step
+                    isdone[handle] = False
+        n_agents_on_goal = sum(isdone.values())
+        global_step_reward += (n_agents_on_goal**2.5) * self.rewards.goal_reached
+        # if sum(isdone.values()) == len(self.agents):
+        #     global_step_reward += self.rewards.finish_episode
+        #     for handle in self.agents.keys(): 
+        #        # rewards[handle] = self.rewards.finish_episode
+        #         overall_dones[handle] = True
+        # else:
+        #     for i, agnt in self.agents.items():
+        #         overall_dones[i] = False
+
+        if collisions['obs_col']:
+            for key, val in collisions['obs_col'].items():
+                if val: global_step_reward += self.rewards.object_collision
+                #if val: rewards[key] += self.rewards.object_collision
+        if collisions['agent_col']:
+            for key, val in collisions['agent_col'].items():
+                if val: global_step_reward += self.rewards.agent_collision
+                #if val: rewards[key] += self.rewards.agent_collision
+        for handle, agent in self.agents.items():
+            rewards[handle] = global_step_reward
+        return isdone, rewards
+
+
+class Independent_NavigationV7_1(Independent_NavigationV0):
+    ''' Increasing reward for each agent reaching goal'''
+    class Rewards(): #For this Env this is global rewards
+        step= -0.2
+        object_collision = -0.4 #-0.015#-0.1  #Changed to 0.0
+        agent_collision = -0.4
+        goal_reached= 0.05
+        finish_episode = 0.0
+
+    def __init__(self, args):
+        super().__init__(args)
+        self.rewards = self.Rewards()
+    
+    def get_rewards(self, collisions):
+        rewards = {}
+        isdone = {}
+        overall_dones = {}
+        global_step_reward = self.rewards.step * len(self.agents)
+
+        for handle, agent in self.agents.items():
+            rewards[handle] = 0
+            for g in self.goals.values():
+                if g.pos == agent.pos and g.goal_id == agent.id:
+                    #rewards[handle] += self.rewards.goal_reached
+                    #rewards[handle] = self.rewards.goal_reached
+                    isdone[handle] = True
+                    break
+                else:
+                    #rewards[handle] = self.rewards.step
+                    isdone[handle] = False
+        n_agents_on_goal = sum(isdone.values())
+        global_step_reward += (n_agents_on_goal**2.5) * self.rewards.goal_reached
+        # if sum(isdone.values()) == len(self.agents):
+        #     global_step_reward += self.rewards.finish_episode
+        #     for handle in self.agents.keys(): 
+        #        # rewards[handle] = self.rewards.finish_episode
+        #         overall_dones[handle] = True
+        # else:
+        #     for i, agnt in self.agents.items():
+        #         overall_dones[i] = False
+
+        if collisions['obs_col']:
+            for key, val in collisions['obs_col'].items():
+                #if val: global_step_reward += self.rewards.object_collision
+                if val: rewards[key] += self.rewards.object_collision
+        if collisions['agent_col']:
+            for key, val in collisions['agent_col'].items():
+                #if val: global_step_reward += self.rewards.agent_collision
+                if val: rewards[key] += self.rewards.agent_collision
+        for handle, agent in self.agents.items():
+            rewards[handle] += global_step_reward
+        return isdone, rewards
+
+
+
 # if __name__ == "__main__":
 
 #     def test_CN():

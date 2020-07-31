@@ -40,18 +40,32 @@ if __name__ == "__main__":
    # args =  parser.parse_args(["--name", "ppo_hyp_param"])
 
 
-    # experiments = [exp, exp2, exp3, exp4, exp5, exp6, exp7, exp8, exp9, exp10, exp11, exp12, exp13, exp14]
-    # flag = True
-    # for ex in experiments:
-    #     if hasattr(ex, args.name):
-    #         e = getattr(ex, args.name)
-    #         e()
-    #         flag = False
-    # if flag:
-    #     print("No experiment with that name")
+    experiments = [exp, exp2, exp3, exp4, exp5, exp6, exp7, exp8, exp9, exp10, exp11, exp12, exp13, exp14]
+    flag = True
+    for ex in experiments:
+        if hasattr(ex, args.name):
+            e = getattr(ex, args.name)
+            e()
+            flag = False
+    if flag:
+        print("No experiment with that name")
 
-    from Experiments.ppo_hyp2 import ppo_TEST
-    ppo_TEST()
+
+
+    # from Experiments.maac_hyp import maac_2A2_1
+    # maac_2A2_1()
+
+    # from Experiments.ppo_hyp2 import ppo_2A2_1
+    # ppo_2A2_1()
+
+    # from Experiments.ppo_hyp2 import ppo_2A2_4, ppo_2A2_2
+    # from Experiments.maac_hyp import maac_2A2_2, maac_2A2_4
+    # hldr =  [ppo_2A2_2, maac_2A2_4] #[ppo_2A2_4, maac_2A2_2] #,
+    # for i in hldr:
+    #     try:
+    #         i()
+    #     except KeyboardInterrupt:
+    #         print("try again")
 
 
 

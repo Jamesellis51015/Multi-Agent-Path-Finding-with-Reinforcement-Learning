@@ -1,0 +1,3 @@
+Architecture,all_agents_on_goal,agent_dones,total_agent_collisions,total_obstacle_collisions
+ppo,0.1$\pm$0.3,0.3$\pm$0.3,0.53$\pm$1.2,1.2$\pm$1.3
+maac,0.0$\pm$0.0,0.0$\pm$0.0,0.0$\pm$0.0,0.0$\pm$0.0

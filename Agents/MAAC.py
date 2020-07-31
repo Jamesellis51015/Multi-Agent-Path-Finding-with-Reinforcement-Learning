@@ -183,7 +183,7 @@ def run(config, logger0):
     env.close()
 
 def benchmark(config, logger, policy, num_episodes, render_length, curr_episode):
-    env = make_parallel_env(config, 1, seed=num_episodes//100)
+    env = make_parallel_env(config, 1, np.random.randint(0, 10000))#seed=num_episodes//100)
     
     hldr = make_env(config)
     max_steps = hldr.max_step
