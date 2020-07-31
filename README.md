@@ -2,7 +2,12 @@
 
 ## Work In Progress!
 
-A basic gridworld implementation can be found in Env/grid_env.py
+A basic gridworld implementation where agents can collide with each other as well as obstacles. Agents have to navigate to their goal locations. Majority of the code for the environment can be found in Env/grid_env.py and Env/env.py
+
+![Alt text](gridworld_example.png?raw=true "")
+
+Requirements:
+- Many requirements. Best would be to make a conda environment from environment.yml
 
 For an example run manual_test.py and type commands according to instructions. (Sometimes fails first time, if its a problem with command inputs, try again.)
 
@@ -10,6 +15,7 @@ To make own gridworld, make new class in env.py which inherits Grid_Env class fr
 
 Credits for rendering goes to:
 
+```
 @misc{gym_minigrid,
   author = {Chevalier-Boisvert, Maxime and Willems, Lucas and Pal, Suman},
   title = {Minimalistic Gridworld Environment for OpenAI Gym},
@@ -18,6 +24,9 @@ Credits for rendering goes to:
   journal = {GitHub repository},
   howpublished = {\url{https://github.com/maximecb/gym-minigrid}},
 }
+```
+
+
 
 
 
