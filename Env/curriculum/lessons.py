@@ -9,7 +9,8 @@ def ppo_cn():
             self.n_agents = n_agents
             self.obj_density = obj_density
             self.name = "n_agents" + str(n_agents) + "_obj_density" + str(obj_density)
-    
+            self.use_custom_rewards = False
+     
     curr = []
     for ob_dens in [0.0, 0.1, 0.2]:
         for a in range(6):
@@ -18,5 +19,39 @@ def ppo_cn():
     curr = {i:c for i, c in enumerate(curr)}
     return curr
 
+
+def ppo_cl_4():
+    map_size = 5
+    class currBase():
+        def __init__(self, n_agents, obj_density):
+            self.env_name = "independent_navigation-v0"
+            self.map_shape = (map_size, map_size)
+            self.n_agents = n_agents
+            self.obj_density = obj_density
+            self.name = "n_agents" + str(n_agents) + "_obj_density" + str(obj_density)
+            self.use_custom_rewards = False
+            self.custom_env_ind = -1
+
+    class currBase2():
+        def __init__(self, ind = 0):
+            self.env_name = "ind_navigation_custom-v0"
+            self.map_shape = (map_size, map_size)
+            self.n_agents = 4
+            self.obj_density = 0.0
+            self.name = "Env_" + self.env_name
+            self.use_custom_rewards = False
+            self.custom_env_ind = ind
+     
+    curr = []
+    for ob_dens in [0.0, 0.1, 0.2]:
+        for a in range(2,9):
+            hldr = currBase(a, ob_dens)
+            curr.append(hldr)
+    for i in range(7):
+        hldr = currBase2(i)
+        curr.append(hldr)
+        
+    curr = {i:c for i, c in enumerate(curr)}
+    return curr
 
     
