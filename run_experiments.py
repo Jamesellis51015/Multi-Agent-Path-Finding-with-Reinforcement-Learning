@@ -1,4 +1,5 @@
 import argparse
+from time import sleep
 
 import Experiments.experiments as exp
 import Experiments.maac_experiments as exp2
@@ -27,6 +28,10 @@ if __name__ == "__main__":
     #singel_agentP0_3_1()
     #test3()
 
+    # for i in range(5): #wait 5h before execution
+    #     print("waiting... {}".format(i))
+    #     sleep(60*60)
+
     parser = argparse.ArgumentParser("Run Experiment")
     parser.add_argument("--name", type=str)
     args = parser.parse_args()
@@ -51,12 +56,16 @@ if __name__ == "__main__":
         print("No experiment with that name")
 
 
+  #  from Experiments.exp_ppo_curr import exp_ppo_curr2
+  #  exp_ppo_curr2()
 
-    # from Experiments.maac_hyp import maac_2A2_1
-    # maac_2A2_1()
 
-    # from Experiments.ppo_hyp2 import ppo_2A2_1
-    # ppo_2A2_1()
+
+    # from Experiments.maac_hyp import maac_4_4
+    # maac_4_4()
+
+    from Experiments.ppo_hyp2 import ppo_4_4
+    ppo_4_4()
 
     # from Experiments.ppo_hyp2 import ppo_2A2_4, ppo_2A2_2
     # from Experiments.maac_hyp import maac_2A2_2, maac_2A2_4

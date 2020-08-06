@@ -62,6 +62,7 @@ def test_mstar():
         for k in all_acts.keys():
             hldr[k] = all_acts[k][s]
         all_steps.append(hldr)
+
     for h in all_steps:
         env.step(h)
         r = env.render(mode = mode)
@@ -104,7 +105,7 @@ def test_mstar():
             r = env.render(mode = mode)
 
 
-def test_corridor(name = 'narrow_corridor-v0', index = None):
+def test_ind_navigation_custom(name = 'ind_navigation_custom-v0', index = -1):
 
     version = int(name[-1])
     i = index
@@ -113,15 +114,17 @@ def test_corridor(name = 'narrow_corridor-v0', index = None):
 
     #Environment:
     parser.add_argument("--map_shape", default = (12,12), type=object)
-    parser.add_argument("--n_agents", default = 12, type=int)
+    parser.add_argument("--n_agents", default = 3, type=int)
     parser.add_argument("--env_name", default = name, type= str)
     #parser.add_argument("--use_default_rewards", default=True, type=bool)
     parser.add_argument("--obj_density", default = 0.3, type=int)
+    parser.add_argument("--use_custom_rewards", default = False, action='store_true')
+    parser.add_argument("--custom_env_ind", default= i, type=int)
 
     args = parser.parse_args()
-   # env = make_env(args)
-    from Env.env import Narrow_CorridorV0 
-    env = Narrow_CorridorV0(args, ind=i)
+    env = make_env(args)
+    #from Env.env import Narrow_CorridorV0 
+    #env = Narrow_CorridorV0(args, ind=i)
     print(env.summary())
     print("#################")
     print("Observation space: {}".format(env.observation_space))
@@ -199,8 +202,10 @@ def test_corridor(name = 'narrow_corridor-v0', index = None):
             #print(r)
 
 if __name__ == "__main__":
-    #test()
+    #test_ind_navigation_custom(name = 'ind_navigation_custom-v0', index = 6)
 
+
+    test_mstar()
     def test_IndNav(name = 'cooperative_navigation-v0'):
 
         version = int(name[-1])
@@ -432,7 +437,7 @@ if __name__ == "__main__":
     # name = 'independent_navigation-v6_1'
     # test_IndNav(name)
 
-    test_corridor(index=0)
+   # test_corridor(index=0)
 
    # test_mstar()
 

@@ -18,7 +18,7 @@ class CurriculumLogger():
         #inint global iteration and iteration for each curr
         self.log_keys = ['total_steps', 'total_rewards', \
          'total_agent_collisions', 'total_obstacle_collisions',\
-         'total_avg_agent_r', 'total_ep_global_r', 'agent_dones']
+         'total_avg_agent_r', 'total_ep_global_r', 'agent_dones','all_agents_on_goal']
 
         self.args = args
         self.model = model
@@ -186,8 +186,8 @@ class CurriculumLogger():
     def benchmark(self, curr_id):
         #run benchmark func and log results
         env_args = self.curr[curr_id]
-        frames, terminal_infos = self.benchmark_func(env_args, \
-            self.model, self.args.benchmark_num_episodes, self.args.benchmark_render_length)
+        frames, terminal_infos = self.benchmark_func(env_args, self.args, \
+            self.model, self.args.benchmark_num_episodes, self.args.benchmark_render_length, self.model.current_device)
         render_path = self.sub_benchmark_dir[curr_id] + "/benchmark_" + \
             str(self.tracking_info[curr_id]["iterations"])+ '.mp4'
         clip = mpy.ImageSequenceClip(frames, fps = 5)

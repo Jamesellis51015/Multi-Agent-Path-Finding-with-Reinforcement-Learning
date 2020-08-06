@@ -1,12 +1,12 @@
 import numpy as np
 import math
-from Env.curriculum.lessons import ppo_cn
+from Env.curriculum.lessons import ppo_cn, ppo_cl_4
 
 class CurriculumManager():
     def __init__(self, args, logger):
         #if args.curriculum == 'ppo_cn':
           #  from Env.curriculum.lessons import ppo_cn
-        self.curr = ppo_cn()
+        self.curr = ppo_cl_4() #ppo_cn()
         self.curr_env_id = 0 #the sampled/currently active env
         self.highest_priority_id = 0 #The curriculum with the highest probability of being selected
         self.logger = logger

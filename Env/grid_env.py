@@ -265,7 +265,8 @@ class Grid_Env(Grid):
         self.agents, self.goals = self._populate_grid(obj_map)
         self.agents = {i:agent for i,agent in enumerate(self.agents)}
         for i, agnt in self.agents.items():
-            agnt.id = i 
+            if agnt.id is None:
+                agnt.id = i 
         self.n_agents = len(self.agents)
         #self.reward_function = 'navigation'
         #self.rewards = self.Rewards()

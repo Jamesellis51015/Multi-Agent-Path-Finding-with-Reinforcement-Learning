@@ -156,9 +156,6 @@ class Heuristics():
             
 
 
-
-
-
         class Collisions():
             def __init__(self):
                 self.coll = {}
@@ -191,8 +188,6 @@ class Heuristics():
                                 #self.coll[v].add(i)
                                 #self.coll[v].add(i2)
                 return set()
-
-
 
 
         class Cost():

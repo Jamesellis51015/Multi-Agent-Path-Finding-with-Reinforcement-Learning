@@ -65,7 +65,7 @@ class PPO():
         return hc
     def extend_agent_indexes(self, nagents):
         assert (self.share_actor == True and self.share_value==True), \
-            "Parameters are not shared!"
+            "Parameters are not shared. This function only works for shared parameters."
         hldr = self.actors[0]
         self.actors = [hldr for i in range(nagents)]
         hldr = self.critics[0]

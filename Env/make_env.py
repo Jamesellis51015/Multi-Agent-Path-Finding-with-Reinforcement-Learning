@@ -73,5 +73,9 @@ def make_env(args):
         from Env.env import Narrow_CorridorV0 
         env = Narrow_CorridorV0(args)
         return env
+    elif args.env_name == "ind_navigation_custom-v0":
+        from Env.env import Ind_Navigation_CustomV0
+        env = Ind_Navigation_CustomV0(args)
+        return env
     else:
         raise NotImplementedError
