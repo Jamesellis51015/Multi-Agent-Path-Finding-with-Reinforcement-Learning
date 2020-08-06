@@ -262,11 +262,22 @@ class Grid_Env(Grid):
         self.max_step = int(math.floor((self.x_len * self.y_len)))
         self.step_count = 0
         #Agents:
+        # self.agents, self.goals = self._populate_grid(obj_map)
+        # self.agents = {i:agent for i,agent in enumerate(self.agents)}
+        # for i, agnt in self.agents.items():
+        #     if agnt.id is None:
+        #         agnt.id = i 
+
+        #####
         self.agents, self.goals = self._populate_grid(obj_map)
-        self.agents = {i:agent for i,agent in enumerate(self.agents)}
-        for i, agnt in self.agents.items():
+        hldr = {}
+        for i, agnt in enumerate(self.agents):
             if agnt.id is None:
                 agnt.id = i 
+            hldr[agnt.id] = agnt
+        self.agents = hldr
+        
+        ####
         self.n_agents = len(self.agents)
         #self.reward_function = 'navigation'
         #self.rewards = self.Rewards()
