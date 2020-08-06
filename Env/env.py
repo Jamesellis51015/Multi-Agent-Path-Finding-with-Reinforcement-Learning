@@ -105,14 +105,134 @@ class Narrow_CorridorV0(Grid_Env):
 
 
 
-# 
-class Independent_NavigationV0(Grid_Env):
+class Ind_Navigation_CustomV0(Grid_Env):
     class Rewards():
-        step= -0.01
-        object_collision = -0.015#-0.1
+        step= -0.1
+        object_collision = -0.02#-0.1
+        agent_collision = -0.2
+        goal_reached= 0.3#0.01
+        finish_episode = 2.0
+    class Global_Cooperative_Rewards():
+        """All agents share this reward """
+        step= -0.1
+        object_collision = -0.1
         agent_collision = -0.4
-        goal_reached= 0.1#0.01
-        finish_episode = 1
+        goal_reached= 1.0
+        finish_episode = 2
+    def __init__(self, args):
+        import __main__
+       # raise Exception("get_rewads() has not been changed to return isdone instead of overall_dones")
+        curr_dir = os.path.dirname(__file__)
+        env_folder = curr_dir + r"/custom/agents4/"
+        all_files = listdir(env_folder)
+        sort_f = lambda x: int(x.split('.')[0])
+        all_files.sort(key=sort_f)
+        if args.custom_env_ind < 0:
+            ind = None
+        else:
+            ind = args.custom_env_ind
+
+        if ind is None:
+            env_ind = np.random.choice(np.arange(len(all_files)), 1).item()
+            env_file = join(env_folder, all_files[env_ind])
+        else:
+            env_file = join(env_folder, all_files[ind])
+        #env_file = '/home/desktop123/Documents/Academics/Code/Multiagent_Gridworld/Env/custom/narrowCorridor1.csv'
+        self.name = "ind_navigation-v0"
+        self.args = args
+        generator =  csv_generator(env_file)
+        #generator2 = random_obstacle_generator((7,7), 2, obj_density = args.obj_density)
+        #print("from csv: {}".format(g))
+        #print("from random obs gen: {}".format(generator2()))
+        #time.sleep(1000)
+        super(). __init__(generator, diagonal_actions = False, fully_obs = True, view_d = 2, agent_collisions = True)
+        #Goals:
+        assert len(self.goals) == len(self.agents)
+        #goal_ids = np.random.choice(len(self.goals), len(self.goals), replace = False) #agents assigned to goals
+        #for i,g in enumerate(self.goals):
+        #    g.goal_id = goal_ids[i]
+        self.goals = {g.goal_id : g for g in self.goals}
+
+        if self.args.use_custom_rewards:
+            if self.args.step_r != -10:
+                self.rewards.step = self.args.step_r 
+            if self.args.agent_collision_r != -10:
+                self.rewards.agent_collision = self.args.agent_collision_r
+            if self.args.obstacle_collision_r != -10:
+                self.rewards.object_collision = self.args.obstacle_collision_r
+            if self.args.goal_reached_r != -10:
+                self.rewards.goal_reached = self.args.goal_reached_r
+            if self.args.finish_episode_r != -10:
+                self.rewards.finish_episode = self.args.finish_episode_r
+
+        #Set reward function, obsevation space etc
+        self.rewards = self.Rewards()
+        #Observation settings:
+        self.fully_obs = True
+        self.inc_obstacles = True
+        self.inc_other_agents = True
+        self.inc_other_goals = True #If agent does not have specific goal, only include other agent's goals.
+        self.inc_own_goals = True #This is only applicable to Independet Navigation tasks; In CN goals are everyones goals
+        self.inc_direction_vector = False
+
+        observation_space = self.init_observation_space()
+        self.observation_space = [copy.deepcopy(observation_space) for _ in self.agents]
+
+        self.heur = Heuristics(self.grid, self)
+    def reset(self, env_ind = None):
+        self.__init__(self.args)
+        (obs, rewards, dones, info) = self.step({h:0 for h in self.agents.keys()})
+        return obs
+
+    def get_rewards(self, collisions):
+        rewards = {}
+        isdone = {}
+        overall_dones = {}
+        for handle, agent in self.agents.items():
+            for g in self.goals.values():
+                if g.pos == agent.pos and g.goal_id == agent.id:
+                    rewards[handle] = self.rewards.goal_reached
+                    isdone[handle] = True
+                    break
+                else:
+                    rewards[handle] = self.rewards.step
+                    isdone[handle] = False
+        if sum(isdone.values()) == len(self.agents):
+            for handle in self.agents.keys(): 
+                rewards[handle] = self.rewards.finish_episode
+                overall_dones[handle] = True
+        else:
+            for i, agnt in self.agents.items():
+                overall_dones[i] = False
+
+        if collisions['obs_col']:
+            for key, val in collisions['obs_col'].items():
+                if val: rewards[key] += self.rewards.object_collision
+        if collisions['agent_col']:
+            for key, val in collisions['agent_col'].items():
+                if val: rewards[key] += self.rewards.agent_collision
+        return isdone, rewards
+    
+    def get_global_cooperative_rewards(self, collisions):
+        r = {i:0 for i, a in self.agents.items()}
+        return r
+
+
+
+class Independent_NavigationV0(Grid_Env):
+    # class Rewards():
+    #     step= -0.01
+    #     object_collision = -0.015#-0.1
+    #     agent_collision = -0.4
+    #     goal_reached= 0.1#0.01
+    #     finish_episode = 1
+
+    class Rewards():
+        step= -0.1
+        object_collision = -0.02#-0.1
+        agent_collision = -0.2
+        goal_reached= 0.3#0.01
+        finish_episode = 2.0
 
     class Global_Cooperative_Rewards():
         """All agents share this reward """
@@ -599,7 +719,7 @@ class Cooperative_Navigation_V0(Grid_Env):
     def __init__(self, args):
         #Make default env arguments if not exist in args
         #initialize base Grid_Env
-        raise Exception("get_rewads() has not been changed to return isdone instead of overall_dones")
+       # raise Exception("get_rewads() has not been changed to return isdone instead of overall_dones")
         self.description = "Agents have cover a number of landmarks (goals) equal" + \
             " to the number of agents whilst avoiding collisions. It" + \
             "does not matter which agent covers which landmark. No obstacles"
@@ -674,13 +794,7 @@ class Cooperative_Navigation_V0(Grid_Env):
                         bl = self.graph.get_blocking_obs(a.pos, g.pos)
         else:
             raise "Goals not distinct in cooperative navigation"
-
-
-
-
-                        
-
-
+              
     def get_rewards(self, collisions):
         '''Agent get individual rewards for naviagting to a goal position as well a group reward for covering all positions '''
         rewards = {agent_id:self.rewards.step for agent_id in self.agents.keys()} #initialise each agnets reward to the step reward
