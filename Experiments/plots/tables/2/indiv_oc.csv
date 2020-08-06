@@ -1,5 +1,5 @@
-Architecture,total_steps,all_agents_on_goal,agent_dones,total_agent_collisions,total_obstacle_collisions
-PPO_-0.015,19.08$\pm$2.7,0.43$\pm$0.1,0.8$\pm$0.1,1.64$\pm$1.3,4.51$\pm$1.7
-PPO_-0.4,18.59$\pm$3.0,0.45$\pm$0.2,0.81$\pm$0.1,1.37$\pm$1.4,0.56$\pm$1.0
-MAAC_-0.015,21.49$\pm$8.0,0.28$\pm$0.5,0.66$\pm$0.3,0.67$\pm$2.4,3.48$\pm$4.0
-MAAC_-0.4,26.0$\pm$0.0,0.0$\pm$0.0,0.0$\pm$0.0,0.02$\pm$0.2,0.01$\pm$0.1
+Architecture,total_steps,total_agent_collisions,total_obstacle_collisions,agent_dones,all_agents_on_goal
+PPO_-0.015,19.08$\pm$2.7,1.64$\pm$1.3,4.51$\pm$1.7,0.8$\pm$0.1,0.43$\pm$0.1
+PPO_-0.4,18.59$\pm$3.0,1.37$\pm$1.4,0.56$\pm$1.0,0.81$\pm$0.1,0.45$\pm$0.2
+MAAC_-0.015,21.49$\pm$8.0,0.67$\pm$2.4,3.48$\pm$4.0,0.66$\pm$0.3,0.28$\pm$0.5
+MAAC_-0.4,26.0$\pm$0.0,0.02$\pm$0.2,0.01$\pm$0.1,0.0$\pm$0.0,0.0$\pm$0.0
