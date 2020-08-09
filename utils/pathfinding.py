@@ -3,6 +3,7 @@ from queue import Queue
 import copy
 from sklearn.model_selection import ParameterGrid
 import numpy as np
+from tabulate import tabulate
 
 class Heuristics():
     class Node():
@@ -30,13 +31,13 @@ class Heuristics():
     #     #    self.nodes = None
     #         self.prev_vertex = None
     #         self.collision_set = None
-    
 
     def __init__(self, grid, env):
         self.grid = grid
         self.env = env
         self.block_true_dist = env.view_d
         self.x_bound, self.y_bound = grid.shape
+        self.directions = [(0,0), (0,1), (0,-1), (1,0), (-1,0)]
 
         #Treat these object types as obstacles
         self.obstacle_types = ["obstacle", "agent"]
@@ -47,6 +48,7 @@ class Heuristics():
         self.cost = 1 #cost of transitioning to next node
 
         self.prev_pos_hldr = {i:None for i in self.env.agents.keys()}
+        self.dijkstra_graphs = None
 
     def get_blocking_obs(self, agent_pos, goal_pos):
         '''If no path from agent to goal can be found,
@@ -62,6 +64,94 @@ class Heuristics():
                 if "obstacle" in obs_types:
                     obs_in_way.append(p)
         return obs_in_way
+
+
+    def init_joint_policy_graphs(self, start, end):
+        '''Performs dijkstra search for each agent and stores the result
+            in a dictionary. '''
+        assert type(start) == list, Exception("start parameter has to be list")
+        assert type(end) == list, Exception("end parameter has to be list")
+        assert len(start) == len(end), Exception("start and end positions have to be of same length")
+
+        self.dijkstra_graphs = {}
+        for i,(p_start, p_end) in enumerate(zip(start, end)):
+            assert type(p_start) == tuple and type(p_end) == tuple
+            assert len(p_start) == 2 and len(p_end) == 2
+            self.dijkstra_graphs[i] = self.dijkstra_search(p_end, p_start)
+
+    def expand_position(self,agent_handle, position):
+        '''Returns a list of possible next positions for an agent (ignoring other agents) '''
+        assert not self.dijkstra_search is None
+        assert type(position) == tuple and len(position) == 2
+        assert agent_handle in self.dijkstra_graphs
+        this_graph = self.dijkstra_graphs[agent_handle]
+        next_postions = [self.add_tup(position, d, return_tuple=True) for d in self.directions]
+        neighbours = [n_pos for n_pos in next_postions if n_pos in this_graph]
+        return neighbours
+    
+    def get_next_joint_policy_position(self,agent_handle, position):
+        '''Returns the shortest path next position for an agent'''
+        assert not self.dijkstra_search is None
+        assert type(position) == tuple and len(position) == 2
+        assert agent_handle in self.dijkstra_graphs
+        
+        this_graph = self.dijkstra_graphs[agent_handle]
+
+        assert position in this_graph
+
+        next_postions = [self.add_tup(position, d, return_tuple=True) for d in self.directions]
+
+        next_position_costs = {this_graph[n_pos].move_cost: n_pos for n_pos in next_postions if n_pos in this_graph}
+        min_cost = min(next_position_costs.keys())
+        min_cost_next_pos = next_position_costs[min_cost]
+        return min_cost_next_pos
+
+
+
+
+
+
+
+
+
+    
+    def mstar_search2(self, start, end):
+        
+        if self.dijkstra_graphs is None:
+            print("Joint policy graphs not initialized. Initialzing now")
+            self.init_joint_policy_graphs(start, end)
+        else:
+            print("Joint policy graphs already present...re-using graphs")
+
+        this_graph = self.dijkstra_graphs[0]
+
+        table1 = []
+        table2 = []
+        table3 = []
+        for x in range(self.x_bound):
+            row1 = []
+            row2 = []
+            row3 = []
+            for y in range(self.y_bound):
+                p = (x,y)
+                row1.append(p)
+                if p in this_graph:
+                    hldr = this_graph[p]
+                    row2.append(hldr.move_cost)
+                    row3.append(self.get_next_joint_policy_position(0, p))
+                else:
+                    row2.append("x")
+                    row3.append("x")
+            table1.append(row1)
+            table2.append(row2)
+            table3.append(row3)
+        print("positions: \n {} \n Cost:\n {}\n Optimal_next_pos:\n {}".format(tabulate(table1), tabulate(table2), tabulate(table3)))
+
+
+        
+
+
+
 
     def m_star_search(self, start_config, end_config, ignore = ["agent"]):
 
@@ -261,7 +351,6 @@ class Heuristics():
 
     def _m_expand(self, pos, graph, coll = None):
         '''Returns a list of tuples which is the expanded vertices '''
-
         pos_act = {(0,1):2,
                         (1,0):3,
                         (0,-1):4,
@@ -320,6 +409,9 @@ class Heuristics():
 
     def dijkstra_search(self, start_pos, end_pos, ignore = ["agent"]):
         '''
+        NB: The cost of starts at 0 at the start position and continues thougough 
+        all postions. In order to use the cost to search for the cheapest path,
+        start, place end postion at start position.
         Searches the entire search space and returns a dictionary of the closed set '''
         obstacle_types = copy.deepcopy(self.obstacle_types)
         for ig in ignore:
@@ -429,12 +521,15 @@ class Heuristics():
 
 
 
-    def add_tup(self, a,b):
+    def add_tup(self, a,b, return_tuple = False):
         assert len(a) == len(b)
         ans = []
         for ia,ib in zip(a,b):
             ans.append(ia+ib)
+        if return_tuple:
+            ans = tuple(ans)
         return ans
+    
     def mult_tup(self, a, m):
         ans = []
         for ai in a:
