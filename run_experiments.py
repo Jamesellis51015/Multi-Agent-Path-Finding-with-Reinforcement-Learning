@@ -64,8 +64,8 @@ if __name__ == "__main__":
     # from Experiments.maac_hyp import maac_4_4
     # maac_4_4()
 
-    from Experiments.ppo_hyp2 import ppo_4_4
-    ppo_4_4()
+    #from Experiments.ppo_hyp2 import ppo_4_4
+    #ppo_4_4()
 
     # from Experiments.ppo_hyp2 import ppo_2A2_4, ppo_2A2_2
     # from Experiments.maac_hyp import maac_2A2_2, maac_2A2_4

@@ -17,8 +17,25 @@ import torch.nn.functional as F
 
 from sklearn.model_selection import ParameterGrid
 if __name__ == "__main__":
-   for i in range(2,8):
-      print(i)
+   class A():
+      def __init__(self, b):
+         self.b = b
+   hldr = A(1)
+   h2 = A(3)
+   
+   e1 = hldr
+   e2 = hldr
+
+   e2.b = 99
+
+   print(e1.b)
+
+   d = {"a":1, "b":2}
+
+   if 1 in d:
+      print("yes")
+
+
    # for i in range(5): #wait 5h before execution
    #    print("waiting... {}".format(i))
    #    sleep(60*60)

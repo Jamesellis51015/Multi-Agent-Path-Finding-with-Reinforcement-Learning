@@ -17,9 +17,10 @@ def test():
 
 
 def test_mstar():
-    from Env.env import Narrow_CorridorV0 
-
-    name = 'narrow_corridor-v0'
+    #from Env.env import Narrow_CorridorV0 
+    from Env.env import TestMStar
+    #name = 'narrow_corridor-v0'
+    name ="test_mstar-v0"
     mode = "human"
     parser = argparse.ArgumentParser("Testing")
 
@@ -29,9 +30,12 @@ def test_mstar():
     parser.add_argument("--env_name", default = name, type= str)
     parser.add_argument("--use_default_rewards", default=True, type=bool)
     parser.add_argument("--obj_density", default = 0.0, type=int)
+    parser.add_argument("--use_custom_rewards", default = False, action='store_true')
+    parser.add_argument("--custom_env_ind", default= 1, type=int)
 
     args = parser.parse_args()
-    env = Narrow_CorridorV0(args, ind = 2)
+    env = TestMStar(args)
+    #env = Narrow_CorridorV0(args, ind = 2)
     #from Env.env import Narrow_CorridorV0 
     #env = Narrow_CorridorV0(args, ind=i)
     print(env.summary())
@@ -43,16 +47,20 @@ def test_mstar():
 
     env.render(mode = mode)
     
-    start_pos = tuple([a.pos for a in env.agents.values()])
+    #start_pos = tuple([a.pos for a in env.agents.values()])
+    start_pos = [a.pos for a in env.agents.values()]
     end_pos =[]
     for a in env.agents.values():
         for g in env.goals.values():
             if a.id == g.goal_id:
                 end_pos.append(g.pos)
-    end_pos = tuple(end_pos)
+    #end_pos = tuple(end_pos)
 
     #end_pos = tuple([a.pos for a in env.goals.values()])
     print("start_pos: {}    end_pos: {}".format(start_pos, end_pos))
+    env.heur.mstar_search2(start_pos, end_pos)
+
+    
     all_acts = env.heur.m_star_search(start_pos, end_pos)
     print(all_acts)
 
@@ -64,6 +72,7 @@ def test_mstar():
         all_steps.append(hldr)
 
     for h in all_steps:
+        print(h)
         env.step(h)
         r = env.render(mode = mode)
 
@@ -136,7 +145,7 @@ def test_ind_navigation_custom(name = 'ind_navigation_custom-v0', index = -1):
     
 
 
-    # print("Observation: {}".format(obs))
+    print("Observation: {}".format(obs))
     # print("rewards: {}".format(rewards))
     # print("dones: {}".format(dones))
     # print("collisions: {}".format(collisions))
@@ -202,8 +211,9 @@ def test_ind_navigation_custom(name = 'ind_navigation_custom-v0', index = -1):
             #print(r)
 
 if __name__ == "__main__":
-    #test_ind_navigation_custom(name = 'ind_navigation_custom-v0', index = 6)
-
+    #name = 'ind_navigation_custom-v0'
+    #name = "test_mstar-v0"
+    #test_ind_navigation_custom(name, index = 0)
 
     test_mstar()
     def test_IndNav(name = 'cooperative_navigation-v0'):

@@ -2112,7 +2112,7 @@ def maac_4_4():
     # work_dir = experiment_group_name
     # plot_dir = experiment_group_name + "_Central_TestBases"
 
-    experiment_group_name = "4_4"
+    experiment_group_name = "4_4_2"
     work_dir = '/home/james/Desktop/Gridworld/EXPERIMENTS/' + experiment_group_name
     plot_dir = '/home/james/Desktop/Gridworld/CENTRAL_TENSORBOARD/' + experiment_group_name #+ "_Central"
     #work_dir = experiment_group_name

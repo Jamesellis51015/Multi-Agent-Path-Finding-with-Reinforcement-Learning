@@ -77,5 +77,9 @@ def make_env(args):
         from Env.env import Ind_Navigation_CustomV0
         env = Ind_Navigation_CustomV0(args)
         return env
+    elif args.env_name == "test_mstar-v0":
+        from Env.env import TestMStar
+        env = TestMStar(args)
+        return env
     else:
         raise NotImplementedError
