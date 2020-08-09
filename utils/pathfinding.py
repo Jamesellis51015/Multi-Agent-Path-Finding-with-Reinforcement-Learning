@@ -104,15 +104,16 @@ class Heuristics():
         next_position_costs = {this_graph[n_pos].move_cost: n_pos for n_pos in next_postions if n_pos in this_graph}
         min_cost = min(next_position_costs.keys())
         min_cost_next_pos = next_position_costs[min_cost]
-        return min_cost_next_pos
+        return [min_cost_next_pos]
 
-
-
-
-
-
-
-
+    def get_SIC(self, vertex):
+        assert type(vertex) == tuple
+        assert len(vertex) == len(self.dijkstra_graphs)
+        SIC = 0
+        for i, pos in enumerate(vertex):
+            SIC += self.dijkstra_graphs[i][pos].move_cost
+        return SIC
+            
 
     
     def mstar_search2(self, start, end):
@@ -266,6 +267,7 @@ class Heuristics():
                 self.coll[v] = self.coll[v].union(other_set)
             
             def is_colliding(self, v):
+                raise Exception("This function has a bug, use function in mstar.py")
                 for i, vi in enumerate(v):
                     for i2, vi2 in enumerate(v):
                         if i != i2:
