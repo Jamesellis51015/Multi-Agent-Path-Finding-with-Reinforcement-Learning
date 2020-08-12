@@ -7,14 +7,42 @@ class NewPriorityQueue(PriorityQueue):
         super().__init__()
         self.lookup_table = set()
     def put(self, item):
-        super().put(item)
-        self.lookup_table.add(item[-1].v)
+        if not item[-1].v in self.lookup_table:
+            super().put(item)
+            self.lookup_table.add(item[-1].v)
     def get(self):
         result = super().get()
         self.lookup_table.remove(result[-1].v)
         return result
     def __contains__(self, key):
         return key.v in self.lookup_table
+
+class NewPriorityQueue2(PriorityQueue):
+    def __init__(self):
+        super().__init__()
+        self.lookup_table = {}
+    def add_lookup(self, item):
+        if item[-1].v in self.lookup_table:
+            self.lookup_table[item[-1].v] += 1
+        else:
+            self.lookup_table[item[-1].v] = 1
+    def remove_lookup(self, item):
+        if item[-1].v in self.lookup_table:
+            if self.lookup_table[item[-1].v] < 2:
+                del self.lookup_table[item[-1].v]
+            else:
+                self.lookup_table[item[-1].v] -= 1
+    def put(self, item):
+       # if not item[-1].v in self.lookup_table:
+        super().put(item)
+        self.add_lookup(item)
+    def get(self):
+        result = super().get()
+        self.remove_lookup(result)
+        return result
+    def __contains__(self, key):
+        return key.v in self.lookup_table
+
 
 class Mstar():
     class Vertex():
@@ -30,10 +58,10 @@ class Mstar():
             self.joint_collision_set(self.is_colliding)
         
         def add_back_set(self, new_v):
-            assert isinstance(new_v, self), "Input is not a Vertex class"
+            assert isinstance(new_v, type(self)), "Input is not a Vertex class"
 
-            if new_v.v in self._back_set:
-                print("WARNING: overwriting vertex which already exist in _back_set")
+            # if new_v.v in self._back_set:
+            #     print("WARNING: overwriting vertex which already exist in _back_set")
             self._back_set[new_v.v] = new_v
         
         def get_back_set(self):
@@ -44,7 +72,7 @@ class Mstar():
         def add_collision(self, agent_handle):
             self._collision_set.add(agent_handle)
         def joint_collision_set(self, other_set):
-            self._collision_set.union(other_set)
+            self._collision_set = self._collision_set.union(other_set)
         def is_col_subset(self, other_set):
             return other_set.issubset(self._collision_set)
         def get_collision_set(self):
@@ -98,23 +126,36 @@ class Mstar():
         self.get_next_joint_policy_position = get_next_joint_policy_position
         self.get_SIC = get_SIC
 
-        self.start = start
+        self.all_v = {}
+
+       # self.start = start
 
 
     # def test(self):
     #     for i in range(5):
     #         print({i:self.get_next_joint_policy_position(i, self.start[i]) for i in range(self.v_len)})
 
-    def _search(self, start, end):
+    def get_vertex(self, v):
+        '''If the vertex is not fount in all_v 
+            lookup table, a new vertex is initiated '''
+        assert type(v) == tuple
+        if not v in self.all_v:
+            new_v = self.Vertex(v)
+            self.all_v[v] = new_v
+        return self.all_v[v]
+
+    def search(self, start, end):
         '''Performs M* search. Assumes M* has been initialized '''
         assert type(start) == list, "start parameter has to be list"
         assert type(end) == list, "end parameter has to be list"
         assert len(start) == len(end), "start and end positions have to be of same length"
 
-        all_v = {}
-        v_f = self.Vertex(self._combine_tuples(end))
-        open = NewPriorityQueue()
-        v_s = self.Vertex(self._combine_tuples(start))
+        
+        #v_f = self.Vertex(self._combine_tuples(end))
+        v_f = self.get_vertex(self._combine_tuples(end))
+        open = NewPriorityQueue2()
+        #v_s = self.Vertex(self._combine_tuples(start))
+        v_s = self.get_vertex(self._combine_tuples(start))
         v_s.set_cost(0)
 
         open.put((0, v_s))
@@ -163,7 +204,8 @@ class Mstar():
                 n_pos = self.get_next_joint_policy_position(i, pos)
             all_v_pos[i] = n_pos
         combinations = ParameterGrid(all_v_pos)
-        all_v = [tuple([c[i] for i in range(v_len)]) for c in combinations]
+        all_v = [self.get_vertex(tuple([c[i] for i in range(v_len)])) for c in combinations]
+        #all_v = [self.Vertex(tuple([c[i] for i in range(v_len)])) for c in combinations]
         return all_v
 
 
@@ -182,7 +224,19 @@ class Mstar():
         while not next_v is None:
             all_v.append(next_v.v)
             next_v = next_v.back_ptr
-        #####
+
+        #Get actions from vertices:
+        all_actions = []
+        prev_v = all_v[-1]
+        for v in reversed(all_v[:-1]):
+            actions = {}
+            for i, (previous_position, next_postion) in enumerate(zip(prev_v, v)):
+                position_diff = self._add_tup(next_postion, self._mult_tup(previous_position, -1))
+                actions[i] = self.pos_act[position_diff]
+            prev_v = v
+            all_actions.append(actions)
+        return all_actions
+
         
 
     def _combine_tuples(self, positions):
@@ -194,13 +248,13 @@ class Mstar():
         ans = []
         for ia,ib in zip(a,b):
             ans.append(ia+ib)
-        return ans
+        return tuple(ans)
 
     def _mult_tup(self, a, m):
         ans = []
         for ai in a:
             ans.append(ai*m)
-        return ans
+        return tuple(ans)
 
 
 
