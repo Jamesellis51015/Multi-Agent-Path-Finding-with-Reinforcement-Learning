@@ -18,14 +18,15 @@ def test():
 
 def test_mstar():
     #from Env.env import Narrow_CorridorV0 
-    from Env.env import TestMStar
+    #from Env.env import TestMStar
+    from Env.env import Independent_NavigationV0
     #name = 'narrow_corridor-v0'
     name ="test_mstar-v0"
     mode = "human"
     parser = argparse.ArgumentParser("Testing")
 
     #Environment:
-    parser.add_argument("--map_shape", default = (7,7), type=object)
+    parser.add_argument("--map_shape", default = (5,5), type=object)
     parser.add_argument("--n_agents", default = 2, type=int)
     parser.add_argument("--env_name", default = name, type= str)
     parser.add_argument("--use_default_rewards", default=True, type=bool)
@@ -34,7 +35,8 @@ def test_mstar():
     parser.add_argument("--custom_env_ind", default= 1, type=int)
 
     args = parser.parse_args()
-    env = TestMStar(args)
+   # env = TestMStar(args)
+    env = Independent_NavigationV0(args)
     #env = Narrow_CorridorV0(args, ind = 2)
     #from Env.env import Narrow_CorridorV0 
     #env = Narrow_CorridorV0(args, ind=i)
@@ -48,30 +50,51 @@ def test_mstar():
     env.render(mode = mode)
     
     #start_pos = tuple([a.pos for a in env.agents.values()])
-    start_pos = [a.pos for a in env.agents.values()]
-    end_pos =[]
-    for a in env.agents.values():
-        for g in env.goals.values():
-            if a.id == g.goal_id:
-                end_pos.append(g.pos)
+    #print("env.agents ids: {}".format([a.id for a in env.agents.values()]))
+    #print("env.goals ids: {}".format([a.goal_id for a in env.goals.values()]))
+    def make_start_postion_list(env_hldr):
+        '''Assumes agent keys in evn.agents is the same as agent id's '''
+        start_positions = []
+        for i in range(len(env_hldr.agents.values())):
+            start_positions.append(env.agents[i].pos)
+        return start_positions
+    def make_end_postion_list(env_hldr):
+        '''Assumes agent keys in evn.agents is the same as agent id's '''
+        end_positions = []
+        for i in range(len(env_hldr.goals.values())):
+            end_positions.append(env.goals[i].pos)
+        return end_positions
+
+
+    #start_pos = [a.pos for a in env.agents.values()]
+    start_pos = make_start_postion_list(env)
+    end_pos = make_end_postion_list(env)
+    # end_pos =[]
+    # for a in env.agents.values():
+    #     for g in env.goals.values():
+    #         if a.id == g.goal_id:
+    #             end_pos.append(g.pos)
     #end_pos = tuple(end_pos)
 
     #end_pos = tuple([a.pos for a in env.goals.values()])
     print("start_pos: {}    end_pos: {}".format(start_pos, end_pos))
-    env.heur.mstar_search2(start_pos, end_pos)
+    #all_actions = env.heur.mstar_search2(start_pos, end_pos)
+    all_actions = env.graph.mstar_search2(start_pos, end_pos)
+    print(all_actions)
 
     
-    all_acts = env.heur.m_star_search(start_pos, end_pos)
-    print(all_acts)
 
-    all_steps = []
-    for s in range(len(all_acts[0])):
-        hldr = {}
-        for k in all_acts.keys():
-            hldr[k] = all_acts[k][s]
-        all_steps.append(hldr)
+    # all_acts = env.heur.m_star_search(start_pos, end_pos)
+    # print(all_acts)
 
-    for h in all_steps:
+    # all_steps = []
+    # for s in range(len(all_acts[0])):
+    #     hldr = {}
+    #     for k in all_acts.keys():
+    #         hldr[k] = all_acts[k][s]
+    #     all_steps.append(hldr)
+
+    for h in all_actions:
         print(h)
         env.step(h)
         r = env.render(mode = mode)
@@ -215,7 +238,7 @@ if __name__ == "__main__":
     #name = "test_mstar-v0"
     #test_ind_navigation_custom(name, index = 0)
 
-    test_mstar()
+   # test_mstar()
     def test_IndNav(name = 'cooperative_navigation-v0'):
 
         version = int(name[-1])
@@ -225,8 +248,8 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser("Testing")
 
         #Environment:
-        parser.add_argument("--map_shape", default = (5,5), type=object)
-        parser.add_argument("--n_agents", default = 4, type=int)
+        parser.add_argument("--map_shape", default = (32,32), type=object)
+        parser.add_argument("--n_agents", default = 200, type=int)
         parser.add_argument("--env_name", default = name, type= str)
         parser.add_argument("--use_default_rewards", default=True, type=bool)
         parser.add_argument("--obj_density", default = 0.2, type=int)
@@ -440,12 +463,12 @@ if __name__ == "__main__":
     
 
 
-    # name = 'independent_navigation-v2'
+    name = 'independent_navigation-v0'
 
     #name = 'independent_navigation-v4_1'
 
     # name = 'independent_navigation-v6_1'
-    # test_IndNav(name)
+    test_IndNav(name)
 
    # test_corridor(index=0)
 

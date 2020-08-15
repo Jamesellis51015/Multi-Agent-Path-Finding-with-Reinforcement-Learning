@@ -133,29 +133,29 @@ class Heuristics():
         print("Time taken for joint policy graphs: {}".format(t2 - t_hldr1))
         
 
-        this_graph = self.dijkstra_graphs[0]
+        # this_graph = self.dijkstra_graphs[0]
 
-        table1 = []
-        table2 = []
-        table3 = []
-        for x in range(self.x_bound):
-            row1 = []
-            row2 = []
-            row3 = []
-            for y in range(self.y_bound):
-                p = (x,y)
-                row1.append(p)
-                if p in this_graph:
-                    hldr = this_graph[p]
-                    row2.append(hldr.move_cost)
-                    row3.append(self.get_next_joint_policy_position(0, p))
-                else:
-                    row2.append("x")
-                    row3.append("x")
-            table1.append(row1)
-            table2.append(row2)
-            table3.append(row3)
-        print("positions: \n {} \n Cost:\n {}\n Optimal_next_pos:\n {}".format(tabulate(table1), tabulate(table2), tabulate(table3)))
+        # table1 = []
+        # table2 = []
+        # table3 = []
+        # for x in range(self.x_bound):
+        #     row1 = []
+        #     row2 = []
+        #     row3 = []
+        #     for y in range(self.y_bound):
+        #         p = (x,y)
+        #         row1.append(p)
+        #         if p in this_graph:
+        #             hldr = this_graph[p]
+        #             row2.append(hldr.move_cost)
+        #             row3.append(self.get_next_joint_policy_position(0, p))
+        #         else:
+        #             row2.append("x")
+        #             row3.append("x")
+        #     table1.append(row1)
+        #     table2.append(row2)
+        #     table3.append(row3)
+        # print("positions: \n {} \n Cost:\n {}\n Optimal_next_pos:\n {}".format(tabulate(table1), tabulate(table2), tabulate(table3)))
 
 
         mstar = Mstar(start, end, self.expand_position, self.get_next_joint_policy_position, self.get_SIC)

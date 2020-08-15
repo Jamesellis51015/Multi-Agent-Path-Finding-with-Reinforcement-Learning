@@ -15,6 +15,8 @@ import Experiments.test_ppo2 as exp11
 import Experiments.ppo_hyp2 as exp12
 import Experiments.maac_hyp as exp13
 import Experiments.ic3_hyp as exp14
+import Agents.BC.data_generator as exp15
+import Agents.BC.BC as exp16
 
 if __name__ == "__main__":
     #parameter_tuning()
@@ -32,10 +34,11 @@ if __name__ == "__main__":
     #     print("waiting... {}".format(i))
     #     sleep(60*60)
 
-    parser = argparse.ArgumentParser("Run Experiment")
-    parser.add_argument("--name", type=str)
-    args = parser.parse_args()
-    #args = parser.parse_args(["--name", "ppo_A"])
+    #parser = argparse.ArgumentParser("Run Experiment")
+    #parser.add_argument("--name", type=str)
+    #parser.add_argument("--file_number", type=str)
+    #args = parser.parse_args()
+    #args = parser.parse_args(["--name", "generate_data1"])#"BC_train"])
     #args = parser.parse_args(["--name", "cn_maac_ic3"])
  #   args =  parser.parse_args(["--name", "test_maac_new"])
   #  args =  parser.parse_args(["--name", "test_ic3"]) 
@@ -44,16 +47,21 @@ if __name__ == "__main__":
     #args =  parser.parse_args(["--name", "exp_ppo_curr"])
    # args =  parser.parse_args(["--name", "ppo_hyp_param"])
 
+    from Agents.BC.data_generator import generate_data
+    from Agents.BC.BC import BC_train
+    #BC_train()
+    generate_data()
 
-    experiments = [exp, exp2, exp3, exp4, exp5, exp6, exp7, exp8, exp9, exp10, exp11, exp12, exp13, exp14]
-    flag = True
-    for ex in experiments:
-        if hasattr(ex, args.name):
-            e = getattr(ex, args.name)
-            e()
-            flag = False
-    if flag:
-        print("No experiment with that name")
+
+    # experiments = [exp, exp2, exp3, exp4, exp5, exp6, exp7, exp8, exp9, exp10, exp11, exp12, exp13, exp14, exp15,exp16]
+    # flag = True
+    # for ex in experiments:
+    #     if hasattr(ex, args.name):
+    #         e = getattr(ex, args.name)
+    #         e()
+    #         flag = False
+    # if flag:
+    #     print("No experiment with that name")
 
 
   #  from Experiments.exp_ppo_curr import exp_ppo_curr2

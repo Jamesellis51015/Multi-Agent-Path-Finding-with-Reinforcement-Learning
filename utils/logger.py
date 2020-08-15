@@ -262,8 +262,6 @@ class Logger():
             for key in keys:
                 dict[key] = 0
 
-        
-
         if len(self.batch_average_stats.keys()) == 0 and self.iterations == 0: 
             #self.log_keys = terminal_t_info[0].keys()
             self.log_keys = ['total_steps', 'terminate', 'total_rewards', 'total_agent_collisions', 'total_obstacle_collisions', 'total_avg_agent_r', 'total_ep_global_r', 'agent_dones',"all_agents_on_goal"]
@@ -316,19 +314,32 @@ class Logger():
             return 0
         
 
-    def plot_tensorboard(self, stats, only = None):
+    def plot_tensorboard(self, stats, only = None, external_iteration = None):
         #Plot compared to iterations:
+        if external_iteration is None:
+            iteration = self.iterations
+        else:
+            iteration = external_iteration
+
         if only == None:
             for key in self.log_keys:
-                self.writer.add_scalar(key , stats[key], self.iterations)
+                self.writer.add_scalar(key , stats[key], iteration)
         else:
             for key in only:
-                self.writer.add_scalar(key, stats[key], self.iterations)
+                self.writer.add_scalar(key, stats[key], iteration)
+
+    def plot_tensorboard_custom_keys(self, stats, external_iteration = None):
+        if external_iteration is None:
+            iteration = self.iterations
+        else:
+            iteration = external_iteration
+
+        for key, v in stats.items():
+            self.writer.add_scalar(key, v, iteration)
+        
 
 
 
-    def store_data(self):
-        pass
 
     def write_txt(self, directory,string, file_name):
         f = open(directory + r"/" + file_name, "a")

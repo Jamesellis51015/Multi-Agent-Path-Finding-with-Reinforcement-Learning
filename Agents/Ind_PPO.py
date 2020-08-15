@@ -111,7 +111,7 @@ def run(args):
 
 
 
-def benchmark_func(args, model, num_episodes, render_len, device):
+def benchmark_func(args, model, num_episodes, render_len, device, greedy=False):
     #Assume parallel env
     env = make_parallel_env(args, np.random.randint(0, 10000), 1)
     render_frames = []
@@ -132,9 +132,9 @@ def benchmark_func(args, model, num_episodes, render_len, device):
         for t in itertools.count():
             model.prep_device(device)
 
-            a_probs, a_select, value, _, _, _ = zip(*[model.forward(ob, ) for ob in obs])
+           # a_probs, a_select, value, _, _, _ = zip(*[model.forward(ob, ) for ob in obs])
 
-            a_probs, a_select, value, _, _, _ = zip(*[model.forward(ob,ha,hc, dev=device, valid_act_heur = inf2["valid_act"] ) \
+            a_probs, a_select, value, _, _, _ = zip(*[model.forward(ob,ha,hc, dev=device, valid_act_heur = inf2["valid_act"], greedy=greedy) \
                                     for ob,ha,hc, inf2 in zip(obs, hx_cx_actr, hx_cx_cr, info2)])
 
 
