@@ -18,7 +18,7 @@ def test():
 
 def test_mstar():
     #from Env.env import Narrow_CorridorV0 
-    #from Env.env import TestMStar
+    from Env.env import TestMStar
     from Env.env import Independent_NavigationV0
     #name = 'narrow_corridor-v0'
     name ="test_mstar-v0"
@@ -27,16 +27,16 @@ def test_mstar():
 
     #Environment:
     parser.add_argument("--map_shape", default = (5,5), type=object)
-    parser.add_argument("--n_agents", default = 2, type=int)
+    parser.add_argument("--n_agents", default = 4, type=int)
     parser.add_argument("--env_name", default = name, type= str)
     parser.add_argument("--use_default_rewards", default=True, type=bool)
-    parser.add_argument("--obj_density", default = 0.0, type=int)
+    parser.add_argument("--obj_density", default = 0.2, type=int)
     parser.add_argument("--use_custom_rewards", default = False, action='store_true')
     parser.add_argument("--custom_env_ind", default= 1, type=int)
 
     args = parser.parse_args()
-   # env = TestMStar(args)
-    env = Independent_NavigationV0(args)
+    env = TestMStar(args)
+   # env = Independent_NavigationV0(args)
     #env = Narrow_CorridorV0(args, ind = 2)
     #from Env.env import Narrow_CorridorV0 
     #env = Narrow_CorridorV0(args, ind=i)
@@ -78,8 +78,8 @@ def test_mstar():
 
     #end_pos = tuple([a.pos for a in env.goals.values()])
     print("start_pos: {}    end_pos: {}".format(start_pos, end_pos))
-    #all_actions = env.heur.mstar_search2(start_pos, end_pos)
-    all_actions = env.graph.mstar_search2(start_pos, end_pos)
+    all_actions = env.heur.mstar_search2(start_pos, end_pos)
+    #all_actions = env.graph.mstar_search2(start_pos, end_pos)
     print(all_actions)
 
     
@@ -248,8 +248,8 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser("Testing")
 
         #Environment:
-        parser.add_argument("--map_shape", default = (32,32), type=object)
-        parser.add_argument("--n_agents", default = 200, type=int)
+        parser.add_argument("--map_shape", default = (10,10), type=object)
+        parser.add_argument("--n_agents", default = 4, type=int)
         parser.add_argument("--env_name", default = name, type= str)
         parser.add_argument("--use_default_rewards", default=True, type=bool)
         parser.add_argument("--obj_density", default = 0.2, type=int)
@@ -472,7 +472,7 @@ if __name__ == "__main__":
 
    # test_corridor(index=0)
 
-   # test_mstar()
+  #  test_mstar()
 
 
 
