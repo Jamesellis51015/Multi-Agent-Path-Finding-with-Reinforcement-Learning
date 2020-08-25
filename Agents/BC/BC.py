@@ -1,9 +1,10 @@
 # #For manual testing:
 import argparse
 from tabulate import tabulate
-# from Env.make_env import make_env
+from Env.make_env import make_env
 from gym import spaces
 from sklearn.model_selection import ParameterGrid
+from distutils.dir_util import copy_tree
 # import config
 # import numpy as np
 # from PIL import Image
@@ -16,6 +17,8 @@ import math
 import numpy as np
 from utils.logger import Logger
 import torch.optim as optim
+from Agents.BC.data_generator import generate_data
+import copy
 
 
 def get_files_in_fldr(path):
@@ -28,13 +31,22 @@ def get_files_in_fldr(path):
     files_in_folder = [os.path.join(rt, f) for f in files_in_folder]
     return files_in_folder
 
+def get_file_names_in_fldr(path):
+    files_in_folder = None
+    rt = None
+    for (root, dirs, files) in os.walk(path, topdown=True):
+        files_in_folder = files
+        rt = root
+        break
+    return files_in_folder
+
 def get_data_files(fldr_path):
     all_files = get_files_in_fldr(fldr_path)
     data_str = ["train", "test", "validation"]
     dat_files = {}
     for f in all_files:
         for d_type in data_str:
-            if d_type in f:
+            if d_type in f.split('/')[-1]:
                 dat_files[d_type] = f
                 break
     return dat_files["train"], dat_files["test"], dat_files["validation"]
@@ -131,8 +143,6 @@ def split_data(data, save_folder, name, ratio = "70:15:15", shuffle=True):
 
 
 
-
-
 def BC_train():
     #Helper functions
     def loss_f(pred, label):
@@ -188,8 +198,8 @@ def BC_train():
 
     parmeter_grid1 = { #1:mbsize_32_lr_0.0001_epochs_100_weightdecay_0.0001  2:ize_32_lr_5e-05_epochs_40_weightdecay_0.0001
         "bc_mb_size": [32],
-        "bc_lr": [0.00005], #0.0001
-        "n_epoch": [40],
+        "bc_lr": [0.000005], #0.0001
+        "n_epoch": [150],
         "weight_decay": [0.0001]
     }
     grid1 = ParameterGrid(parmeter_grid1)
@@ -209,9 +219,6 @@ def BC_train():
     train_data = torch.load(train_f)
     val_data = torch.load(val_f)
     test_data = torch.load(test_f)
-
-
-    
 
     for param in grid1:
         name = "BC_" + "5x5_" \
@@ -265,20 +272,6 @@ def BC_train():
             iterations = 0
             for data in train_loader:
                 ob, a = data
-                # #######################
-                # headers = ["Channels"]
-                # rows = [["Obstacle Channel"], ["Other Agent Channel"], ["Own Goals Channel"], \
-                #     ["Own Position Channel"], ["Other Goal Channel"]]
-                # #for agnt in range(args.n_agents):
-                # #headers.append("Agent {}".format(agnt))
-                # rows[0].append(ob[0][0])
-                # rows[1].append(ob[0][1])
-                # rows[2].append(ob[0][2])
-                # rows[3].append(ob[0][4])
-                # rows[4].append(ob[0][3])
-                # print(tabulate(rows, tablefmt = 'fancy_grid'))
-                # print("Action: {}".format(a[0].item()))
-                # ##########################
                 (a_pred, _, _, _) = ppo.actors[0].forward(ob)
                 loss = loss_f(a_pred, a)
                 optimizer.zero_grad()
@@ -289,10 +282,12 @@ def BC_train():
             if (epoch+1) % 2 == 0:
                 save(ppo, logger, epoch)
 
-            if (epoch+1) % 25 == 0:
+            if (epoch+1) % 10 == 0:
                 ppo.extend_agent_indexes(args.n_agents)
                 rend_frames, all_info = benchmark_func(args, ppo, 100, 30, DEVICE, greedy=True)
-                logger.benchmark_info(all_info, rend_frames, epoch)
+                logger.benchmark_info(all_info, rend_frames, epoch, end_str = "_greedy")
+                rend_frames, all_info = benchmark_func(args, ppo, 100, 30, DEVICE, greedy=False)
+                logger.benchmark_info(all_info, rend_frames, epoch, end_str = "_NotGreedy")
 
             print("iterations: {}".format(iterations))
             epoch_loss = np.mean(epoch_loss_hldr)
@@ -316,11 +311,339 @@ def BC_train():
         logger.benchmark_info(all_info, rend_frames, param["n_epoch"]+1)
 
 
+def evaluate_across_evs(policy, logger, env_args, variable_args_dict, num_episodes, render_len, device, greedy=False): 
+    param_grid = ParameterGrid(variable_args_dict)
+    for param in param_grid:
+        this_param_dict ={k: param[k] for k in variable_args_dict.keys()}
+        this_env_args = make_env_args(env_args, this_param_dict)
+        policy.extend_agent_indexes(this_env_args.n_agents)
+        end_str = ""
+        for k, v in this_param_dict.items():
+            end_str += '_'
+            end_str += str(k)
+            end_str += "_"
+            if k == "map_shape" and type(v)==tuple:
+                end_str += str(v[-1])
+            else:
+                end_str += str(v)
+        if greedy:
+            end_str += "_Geedy"
+        else:
+            end_str += "_NotGreedy"
+        rend_frames, all_info = benchmark_func(this_env_args, policy, num_episodes, render_len, device, greedy=greedy)
+        logger.init_custom_benchmark_logging_fldr(end_str)
+        logger.benchmark_info(all_info, rend_frames, 0, end_str = end_str, dont_init_ben = True)
+
+    
+def train_PO_FOV_data(custom_args = None):
+    '''Check if data has been processed into train, val and test sets.
+        If not, make copy of data, and process into diff sets.
+        Then starts training with given parameters. '''
+    #Helper functions
+    def loss_f(pred, label):
+        action_label_prob = torch.gather(pred,-1, label.long())
+        log_actions = -torch.log(action_label_prob)
+        loss = log_actions.mean()
+        return loss
+
+    def get_validation_loss(validate_loader, ppo_policy):
+        with torch.no_grad():
+            mae_like = 0
+            total = 0
+            valid_loss_hldr = []
+            for data in validate_loader:
+                if len(data) ==2:
+                    ob, a = data
+                elif len(data) == 3:
+                    ob = (data[0], data[1])
+                    a = data[-1]
+                else:
+                    raise Exception("Data incorrect length")
+                (a_pred, _, _, _) = ppo_policy.actors[0].forward(ob)
+                valid_loss_hldr.append(loss_f(a_pred, a).item())
+        return np.mean(valid_loss_hldr)
+            #valid_loss = {"validation_loss": torch.mean(valid_loss_hldr).item()}
+            #logger.plot_tensorboard(valid_loss)
+            
+    def save(model, logger, end):
+        name = "checkpoint_" + str(end)
+        #checkpoint_path = os.path.join(logger.checkpoint_dir, name)
+        #model.save(checkpoint_path)
+        logger.make_checkpoint(False, str(end))
+
+    def is_processesed(path):
+        '''Returns bool whether or not there exists 
+            three files for train, val and test '''
+        files = get_file_names_in_fldr(path)
+        file_markers = ["train", "test", "validation"]
+        is_processed_flag = True
+        for m in file_markers:
+            sub_flag = False
+            for f in files:
+                if m in f:
+                    sub_flag = True
+            if sub_flag == False:
+                is_processed_flag = False
+                break
+        return is_processed_flag
+            
+
+    parser = argparse.ArgumentParser("Train arguments")
+    parser.add_argument("--folder_name", type= str)
+    parser.add_argument("--mb_size", default=32, type=int)
+    parser.add_argument("--lr", default=5e-5, type=float)
+    parser.add_argument("--n_epoch", default=50, type=int)
+    parser.add_argument("--weight_decay", default=0.0001, type=float)
+    parser.add_argument("--env_name", default='none', type=str)
+    parser.add_argument("--alternative_plot_dir", default="none")
+    parser.add_argument("--working_directory", default="none")
+    parser.add_argument("--name", default="NO_NAME", type=str, help="Experiment name")
+    parser.add_argument("--replace_checkpoints", default=True, type=bool)
+    #Placeholders:
+    parser.add_argument("--n_agents", default=1, type=int)
+    parser.add_argument("--map_shape", default=(5,5), type=object)
+    parser.add_argument("--obj_density", default=0.0, type=float)
+    parser.add_argument("--view_d", default=3, type=int)
+    parser.add_argument("--use_default_rewards", default=True, type=bool)
+    parser.add_argument("--use_custom_rewards", default=False, type=bool)
+
+    #Best previous performing hyp param is: mb:32 lr:5e-5  weightdecay: 0.0001 
+
+    if custom_args is None:
+        args = parser.parse_args()
+    else:
+        args, unkn = parser.parse_known_args(custom_args)
+
+
+    experiment_group_name = args.folder_name #"BC_5x5"
+    work_dir = '/home/james/Desktop/Gridworld/EXPERIMENTS/' + experiment_group_name
+    plot_dir = '/home/james/Desktop/Gridworld/CENTRAL_TENSORBOARD/' + experiment_group_name 
+
+
+    args.working_directory = work_dir
+    args.alternative_plot_dir = plot_dir
+
+    BASE_DATA_FOLDER_PATH = '/home/james/Desktop/Gridworld/BC_Data'
+
+    data_fldr_path = os.path.join(BASE_DATA_FOLDER_PATH, args.folder_name)
+
+    if is_processesed(data_fldr_path):
+        train_f, val_f, test_f = get_data_files(data_fldr_path)
+    else:
+        #Copy data:
+        to_dir = data_fldr_path + "_cpy"
+        os.makedirs(to_dir)
+        copy_tree(data_fldr_path, to_dir)
+        #Split and save data:
+        data, files = combine_all_data(data_fldr_path)
+        delete_files(files)
+        train_f, val_f, test_f = split_data(data, data_fldr_path, "data_")
+
+
+    DEVICE = 'gpu'
+    #Train on data: keep best policy
+    #Get data from files:
+    train_data = torch.load(train_f)
+    val_data = torch.load(val_f)
+    test_data = torch.load(test_f)
+
+    env_hldr = make_env(args)
+    observation_space = env_hldr.observation_space[-1]
+
+    name = "BC_" + args.folder_name \
+            + "mbsize_" + str(args.mb_size) \
+            + "_lr_" + str(args.lr) \
+            + "_epochs_" + str(args.n_epoch) \
+            + "_weightdecay_" + str(args.weight_decay)
+
+        #args.extend(["--name", name])
+    #args = parser.parse_args(args)
+    args.name = name
+
+    ppo = PPO(5, observation_space,
+            "primal7", 
+            1, True, 
+        True, 1, 
+            1, 
+            args.lr, 0.001, 
+            120, 0.2, 0.01, False,
+            False)
+
+    logger = Logger(args, env_hldr.summary() , "none", ppo)
+
+    #Make training data loader
+    (obs, actions) = zip(*train_data)
+    #(obs, actions) = (np.array(obs), np.array(actions))
+    if type(observation_space) == tuple:
+        (obs1, obs2) = zip(*obs)
+        (obs, actions) = ((np.array(obs1), np.array(obs2)), np.array(actions))
+    else:
+        (obs, actions) = (np.array(obs), np.array(actions))
+    ppo.prep_device(DEVICE)
+
+
+    if type(observation_space) == tuple:
+        obs = (ppo.tens_to_dev(DEVICE, torch.from_numpy(obs[0]).float()), \
+            ppo.tens_to_dev(DEVICE, torch.from_numpy(obs[1]).float()))
+    else:
+        obs = [ ppo.tens_to_dev(DEVICE, torch.from_numpy(obs).float()) ]
+
+   # obs = ppo.tens_to_dev(DEVICE, torch.from_numpy(obs).float())
+    action_labels = ppo.tens_to_dev(DEVICE, torch.from_numpy(actions).reshape((-1,1)).float())
+    train_dataset = torch.utils.data.TensorDataset(*obs, action_labels)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.mb_size, shuffle=True)
+
+    #Make validation data_loader
+    (obs, actions) = zip(*val_data)
+    #(obs, actions) = (np.array(obs), np.array(actions))
+    if type(observation_space) == tuple:
+        (obs1, obs2) = zip(*obs)
+        (obs, actions) = ((np.array(obs1), np.array(obs2)), np.array(actions))
+    else:
+        (obs, actions) = (np.array(obs), np.array(actions))
+    #obs = ppo.tens_to_dev(DEVICE, torch.from_numpy(obs).float())
+    if type(observation_space) == tuple:
+        obs = (ppo.tens_to_dev(DEVICE, torch.from_numpy(obs[0]).float()), \
+            ppo.tens_to_dev(DEVICE, torch.from_numpy(obs[1]).float()))
+    else:
+        obs = [ ppo.tens_to_dev(DEVICE, torch.from_numpy(obs).float()) ]
+
+    val_action_labels = ppo.tens_to_dev(DEVICE, torch.from_numpy(actions).reshape((-1,1)).float())
+    valid_dataset = torch.utils.data.TensorDataset(*obs, val_action_labels)
+    valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.mb_size, shuffle=True)
+
+    optimizer = optim.Adam(ppo.actors[0].parameters(), lr = args.lr, weight_decay=args.weight_decay)
+
+    #Train:
+    prev_val_loss = 1e6
+    val_loss_is_greater_cntr = 0
+    val_loss_is_greater_threshhold = 8
+    best_policy = None
+    print(name)
+    for epoch in range(args.n_epoch):
+        epoch_loss_hldr = []
+        iterations = 0
+        for data in train_loader:
+            #ob, a = data
+            if len(data) ==2:
+                ob, a = data
+            elif len(data) == 3:
+                ob = (data[0], data[1])
+                a = data[-1]
+            else:
+                raise Exception("Data incorrect length")
+            (a_pred, _, _, _) = ppo.actors[0].forward(ob)
+            loss = loss_f(a_pred, a)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            epoch_loss_hldr.append(loss.item())
+            iterations += 1
+
+        # if (epoch+1) % 10 == 0:
+        #     ppo.extend_agent_indexes(args.n_agents)
+        #     rend_frames, all_info = benchmark_func(args, ppo, 100, 30, DEVICE, greedy=True)
+        #     logger.benchmark_info(all_info, rend_frames, epoch, end_str = "_greedy")
+        #     rend_frames, all_info = benchmark_func(args, ppo, 100, 30, DEVICE, greedy=False)
+        #     logger.benchmark_info(all_info, rend_frames, epoch, end_str = "_NotGreedy")
+
+        print("iterations: {}".format(iterations))
+        epoch_loss = np.mean(epoch_loss_hldr)
+        valid_loss = get_validation_loss(valid_loader, ppo)
+        log_info = {"train_loss": epoch_loss,
+                    "validation_loss": valid_loss}
+        logger.plot_tensorboard_custom_keys(log_info, external_iteration=epoch)
+        if valid_loss < prev_val_loss:
+            save(ppo, logger, epoch)
+            best_policy = copy.deepcopy(ppo)
+            prev_val_loss = valid_loss
+            val_loss_is_greater_cntr = 0
+        else:
+            val_loss_is_greater_cntr +=1
+        
+
+        print("Epoch: {}  Train Loss: {} Validation Loss: {}".format(epoch, epoch_loss, valid_loss))
+        if val_loss_is_greater_cntr > val_loss_is_greater_threshhold:
+            print("Ending training")
+            break
+    print("Done")
+
+
+
+    #Evaluate best policy across all ens
+    assert not best_policy is None
+    variable_args_dict = {
+        "obj_density": [0.0,0.1,0.2,0.3], 
+        "map_shape": [5,7,10,15]
+    }
+    variable_args_dict["map_shape"] = [(ms, ms) for ms in variable_args_dict["map_shape"]]
+    evaluate_across_evs(best_policy, logger, args, variable_args_dict, 100, 50, DEVICE, greedy=True)
+    evaluate_across_evs(best_policy, logger, args, variable_args_dict, 100, 50, DEVICE, greedy=False)
+
+
+
+def make_env_args(args_parse, args_dict):
+    '''Returns a class with same attributes as in  '''
+    class Base():
+        def __init__(self):
+            self.env_name = "independent_navigation-v8_0"
+            self.map_shape = (5,5)#(map_size, map_size)
+            self.n_agents = 1 #n_agents
+            self.view_d = 3
+            self.obj_density = 0.0 #obj_density
+            self.name = "NONAME" #"mapsize_" + str(map_size) + "nagents" + str(n_agents) + "_objdensity" + str(obj_density)
+            self.use_custom_rewards = False
+            self.custom_env_ind = -1
+            self.ppo_recurrent = False
+            self.ppo_heur_block = False
+            self.ppo_heur_valid_act = False
+            self.ppo_heur_no_prev_state = False
+
+    env_args = Base()
+
+    # Copy args in argparse
+    for k, v in vars(args_parse).items():
+        setattr(env_args, k, v)
+
+    #Set args in Env args to that of args_dict
+    for k, v in args_dict.items():
+        if not hasattr(env_args, k):
+            print("Adding new attribute: {}".format(k))
+        setattr(env_args, k, v)
+    
+    return env_args
 
     
 
-    
-    
 
+def generate_PO_FOV_data(custom_args = None): 
+    '''Generates 5000 samples of each env '''
+    parser = argparse.ArgumentParser("Generate PO FOV data")
+    parser.add_argument("--folder_name", default='none', type=str)
+    parser.add_argument("--env_name", default='independent_navigation-v8_0', type= str)
+    parser.add_argument("--n_episodes", default=5000, type= int)
+    parser.add_argument("--n_agents", default=1, type= int)
+    if custom_args is None:
+        gen_args, unkn = parser.parse_known_args()
+    else:
+        gen_args, unkn = parser.parse_known_args(custom_args)
 
+    gen_dat_custom_args = []
+    gen_dat_custom_args.extend(["--env_name", gen_args.env_name])
+    gen_dat_custom_args.extend(["--folder_name", gen_args.folder_name])
+    gen_dat_custom_args.extend(["--n_agents", str(gen_args.n_agents)])
+    
+    gen_dat_custom_args.extend(["--n_episodes", str(gen_args.n_episodes)])
+    gen_dat_custom_args.extend(["--view_d", "3"])
+
+    ob_dens = [0.0,0.1,0.2,0.3]
+    env_sizes = [5,7,10]
+
+    for e_s in env_sizes:
+        for ob_d in ob_dens:
+            gen_dat_custom_args.extend(["--map_shape", str(e_s)])
+            gen_dat_custom_args.extend(["--obj_density", str(ob_d)])
+            dat_name = "envsize_" + str(e_s) + "_obdensity_" + str(ob_d)
+            gen_dat_custom_args.extend(["--data_name", dat_name])
+            generate_data(custom_args=gen_dat_custom_args)
 

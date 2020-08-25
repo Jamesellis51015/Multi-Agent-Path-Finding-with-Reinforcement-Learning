@@ -31,7 +31,10 @@ def make_actor_net(base_policy_type,double_obs_space = False, recurrent = False,
             if double_obs_space:
                 dim1_shape = observation_space[0].shape
                 dim2 = observation_space[1].shape[0]
-                super(Actor, self).__init__(dim1_shape, dim2, nonlin= nonlin)
+                if "mlp" in base_policy_type:
+                    super(Actor, self).__init__(dim1_shape,hidden_dim, dim2, nonlin= nonlin)
+                else:
+                    super(Actor, self).__init__(dim1_shape,hidden_dim, nonlin= nonlin, cat_end = dim2)
             else:
                 super(Actor, self).__init__(observation_space, hidden_dim, nonlin= nonlin)
             self.recurrent = recurrent
@@ -105,7 +108,10 @@ def make_value_net(base_policy_type,double_obs_space = False, recurrent = False)
             if double_obs_space:
                 dim1_shape = observation_space[0].shape
                 dim2 = observation_space[1].shape[0]
-                super(Critic, self).__init__(dim1_shape, dim2, nonlin= nonlin)
+                if "mlp" in base_policy_type:
+                    super(Critic, self).__init__(dim1_shape, dim2, hidden_dim = hidden_dim,nonlin= nonlin)
+                else:
+                    super(Critic, self).__init__(dim1_shape,hidden_dim, nonlin= nonlin, cat_end = dim2)
             else:
                 super(Critic, self).__init__(observation_space, hidden_dim, nonlin= nonlin)
            # super(Critic, self).__init__(observation_space, hidden_dim, nonlin= nonlin)

@@ -23,7 +23,7 @@ import ray
  #       self.env = make_parallel_env(args, np.random.randint(5000), 2)
   #      self.n_envs = len(self.env)
 #@ray.remote
-def generate(env, episodes):
+def generate(env, episodes, n_agents):
     def make_start_postion_list(env_hldr):
         '''Assumes agent keys in evn.agents is the same as agent id's '''
         start_positions = []
@@ -51,13 +51,13 @@ def generate(env, episodes):
            # env.render('human')
             start_pos = make_start_postion_list(env)
             end_pos = make_end_postion_list(env)
-            mstar_actions = env.graph.mstar_search2(start_pos, end_pos)
+            mstar_actions = env.graph.mstar_search3(start_pos, end_pos)
             if mstar_actions is None:
                 print("No M-star solution found for env generated")
         for a in mstar_actions:
            #assert continue_flag == False
             ep_observations.append(obs)
-            for i in range(4):
+            for i in range(n_agents):
                 data.append((obs[i], a[i]))
             obs, r, dones, info = env.step(a)
            # env.render(mode = 'human')
@@ -109,26 +109,33 @@ def generate(env, episodes):
 
 
 
-def generate_data(name = "independent_navigation-v0"):
+def generate_data(name = "independent_navigation-v0", custom_args = None):
     
      #Environment:
     parser = argparse.ArgumentParser("Generate Data")
-    parser.add_argument("--file_number", type=int)
-    parser.add_argument("--map_shape", default = (5,5), type=object)
+    parser.add_argument("--file_number", default = 0, type=int)
+    parser.add_argument("--map_shape", default = 5, type=int)
     parser.add_argument("--n_agents", default = 4, type=int)
     parser.add_argument("--env_name", default = name, type= str)
     parser.add_argument("--use_default_rewards", default=True, type=bool)
-    parser.add_argument("--obj_density", default = 0.2, type=int)
+    parser.add_argument("--view_d", default = 3, type=int)
+    parser.add_argument("--obj_density", default = 0.2, type=float)
     parser.add_argument("--use_custom_rewards", default = False, action='store_true')
     parser.add_argument("--custom_env_ind", default= 1, type=int)
     parser.add_argument("--n_episodes", default= -1, type=int)
+    parser.add_argument("--folder_name", default= "none", type=str)
     parser.add_argument("--data_name", default= "none", type=str)
     parser.add_argument("--base_path", default= "Notnone", type=str)
 
-    args = parser.parse_args()
+    if custom_args is None:
+        args = parser.parse_args()
+    else:
+        args = parser.parse_args(custom_args)
+
+    args.map_shape = (args.map_shape, args.map_shape)
 
     if not args.n_episodes > 1:
-        EPISODES = 4000
+        EPISODES = 5000
     else:
         EPISODES = args.n_episodes
     #WORKERS = 4
@@ -140,9 +147,9 @@ def generate_data(name = "independent_navigation-v0"):
         #base_path = args.base_path
         base_path = '/home/james/Desktop/Gridworld/BC_Data'
 
-    data_folder = '5x5'
+    data_folder = args.folder_name #'none'
     if args.data_name == "none":
-        data_name = "5x5_" + str(args.file_number) + ".pt"
+        data_name = "none_" + str(args.file_number) + ".pt"
     else:
         data_name = args.data_name
     
@@ -150,7 +157,7 @@ def generate_data(name = "independent_navigation-v0"):
     if not os.path.exists(data_folder_dir):
         os.makedirs(data_folder_dir)
 
-    all_data = generate(make_env(args), EPISODES)
+    all_data = generate(make_env(args), EPISODES, args.n_agents)
     torch.save(all_data, os.path.join(data_folder_dir, data_name))
 
 

@@ -213,11 +213,18 @@ class Logger():
         os.makedirs(bench_dir)
         self.benchmark_writer = SummaryWriter(bench_dir)
 
-    def benchmark_info(self, all_infos, render_frames, episode, parallel_env = True):
-        '''The infos should be off the entire benchmark nr of episode, not per episode '''
+    def init_custom_benchmark_logging_fldr(self, custom_name):
+        #bench_dir = self.benchmark_dir + "/benchmark_" + str(episode)
+        bench_dir = self.benchmark_dir + "/ben_" + custom_name
+        os.makedirs(bench_dir)
+        self.benchmark_writer = SummaryWriter(bench_dir)
+
+    def benchmark_info(self, all_infos, render_frames, episode, parallel_env = True, end_str = None, dont_init_ben = False):
+        '''The infos should be of the entire benchmark nr of episode, not per episode '''
         if episode != self.benchmark_episode:
             self.benchmark_episode = episode
-            self.init_benchmark_logging(episode)
+            if not dont_init_ben:
+                self.init_benchmark_logging(episode)
 
         if self.benchmark_writer is None:
             raise Exception("Benchmark logging has not been initiated")
@@ -235,16 +242,21 @@ class Logger():
         self.log_keys = ['total_steps', 'total_rewards', \
          'total_agent_collisions', 'total_obstacle_collisions',\
          'total_avg_agent_r', 'total_ep_global_r', 'agent_dones', "all_agents_on_goal"]
-        self.log_names = self.log_keys
+        self.log_names = self.log_keys[:]
         # for i,key in enumerate(self.log_keys): 
         #     self.log_names.append(prefix + key)
+        if not end_str is None:
+            self.log_names = [n+end_str for n in self.log_names]
 
         for i,inf in enumerate(info):
           for key,name in zip(self.log_keys, self.log_names):
               self.benchmark_writer.add_scalar(name, inf[key], i)
         
         if len(render_frames) != 0:
-            end = str(episode)
+            if end_str is None:
+                end = str(episode)
+            else:
+                end = str(episode) + end_str
             clip = mpy.ImageSequenceClip(render_frames, fps = 5)
             clip.write_videofile(self.benchmark_dir + "/benchmark_render_" + end + '.mp4')
 
@@ -338,9 +350,6 @@ class Logger():
             self.writer.add_scalar(key, v, iteration)
         
 
-
-
-
     def write_txt(self, directory,string, file_name):
         f = open(directory + r"/" + file_name, "a")
         f.write(string)
@@ -355,20 +364,26 @@ class Logger():
         #clip.write_gif(self.render_dir + "/render_" + str(episode) + '.gif')
         clip.write_videofile(self.render_dir + "/render_" + end + '.mp4')
 
-    def checkpoint_policy(self, append_iteration_nr = True):
+    def checkpoint_policy(self, append_iteration_nr = True, own_append_nr = None):
         if self.iterations > self.checkpoint_counter * self.args.checkpoint_frequency:
             self.checkpoint_counter += 1
+            self.make_checkpoint(append_iteration_nr, own_append_nr)
             
-            if append_iteration_nr:
-                checkpoint_path = self.checkpoint_dir + "/checkpoint_" + str(self.iterations)
-            else:
-                checkpoint_path = self.checkpoint_dir + "/checkpoint_" + str(self.checkpoint_counter)
 
-            if self.previous_checkpoint_dir != None and self.args.replace_checkpoints:
-                os.remove(self.previous_checkpoint_dir)
+    def make_checkpoint(self, append_iteration_nr = True, own_append_nr = None):
+        if append_iteration_nr:
+            checkpoint_path = self.checkpoint_dir + "/checkpoint_" + str(self.iterations)
+        elif not own_append_nr is None:
+            checkpoint_path = self.checkpoint_dir + "/checkpoint_" + str(own_append_nr)
+        else:
+            checkpoint_path = self.checkpoint_dir + "/checkpoint_" + str(self.checkpoint_counter)
 
-            self.policy.save(checkpoint_path)
-            self.previous_checkpoint_dir = checkpoint_path
+        if self.previous_checkpoint_dir != None and self.args.replace_checkpoints:
+            os.remove(self.previous_checkpoint_dir)
+
+        self.policy.save(checkpoint_path)
+        self.previous_checkpoint_dir = checkpoint_path
+
 
     def summary(self):
         s =""

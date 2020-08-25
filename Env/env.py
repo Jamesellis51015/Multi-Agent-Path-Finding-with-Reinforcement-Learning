@@ -227,17 +227,27 @@ class Independent_NavigationV0(Grid_Env):
     #     goal_reached= 0.1#0.01
     #     finish_episode = 1
 
+    # For MAAC:
+    # class Rewards():
+    #     step= -0.1
+    #     object_collision = -0.02#-0.1
+    #     agent_collision = -0.2
+    #     goal_reached= 0.3#0.01
+    #     finish_episode = 2.0
+    
+    # For PPO:
     class Rewards():
         step= -0.1
-        object_collision = -0.02#-0.1
-        agent_collision = -0.2
-        goal_reached= 0.3#0.01
+        object_collision = -0.4#-0.1
+        agent_collision = -0.4
+        goal_reached= 0.3 #0.01
         finish_episode = 2.0
+
 
     class Global_Cooperative_Rewards():
         """All agents share this reward """
         step= -0.01
-        object_collision = -0.2
+        object_collision = -0.4
         agent_collision = -0.4
         goal_reached= 0.0
         finish_episode = 1
@@ -249,7 +259,7 @@ class Independent_NavigationV0(Grid_Env):
             avoiding collisions with other agents"
         self.args =  args
         generator = random_obstacle_generator(args.map_shape, args.n_agents, obj_density = args.obj_density)
-        super().__init__(generator, diagonal_actions = False, fully_obs = False, view_d = 2, agent_collisions = True)
+        super().__init__(generator, diagonal_actions = False, fully_obs = False, view_d = args.view_d, agent_collisions = True)
         self.rewards = self.Rewards()
         #Goals:
         assert len(self.goals) == len(self.agents)
@@ -562,8 +572,9 @@ class Independent_NavigationV2(Grid_Env):
 
         if self.inc_path_grid:
             self.init_path_grid()
-
-        self.norm_path_len = 1#self.x_len + self.y_len
+        
+        #Set to max likely path length
+        self.norm_path_len = self.x_len * self.y_len
 
     def init_path_grid(self):
         #A dict of dict where each dict[id] = {position : Node, ...}
@@ -580,6 +591,7 @@ class Independent_NavigationV2(Grid_Env):
         # goal = self.goals[goal_id]
         # assert goal.goal_id == goal_id
         # start_pos = goal.pos
+        OBSTACLE_VALUE = 1.0
         d_view = self.view_d
         view_dim =  2*d_view + 1
         view = np.empty((view_dim, view_dim), dtype = object)
@@ -589,13 +601,14 @@ class Independent_NavigationV2(Grid_Env):
                 x = x_pos + x_cursor
                 y = y_pos + y_cursor
                 
+                #if out of range
                 if x >= self.x_len or x < 0 or y>= self.y_len or y < 0:
-                    view[d_view + x_cursor,d_view + y_cursor] = -1.0
+                    view[d_view + x_cursor,d_view + y_cursor] = OBSTACLE_VALUE #-1.0
                 else:
                     cell_obj = self.get(x,y)
                     cell_types = [c.type for c in cell_obj]
                     if 'obstacle' in cell_types:
-                        view[d_view + x_cursor,d_view + y_cursor] = -1.0
+                        view[d_view + x_cursor,d_view + y_cursor] = OBSTACLE_VALUE #-1.0
                     else:
                         pos = tuple((x, y))
                         if pos in self.path_grid[agent.id]:
@@ -605,8 +618,9 @@ class Independent_NavigationV2(Grid_Env):
                         else:
                             view[d_view + x_cursor,d_view + y_cursor] = -1.0
                             #print("agent {}  pos {}".format(agent.id, pos))
-        hldr = view.flatten()
-        return view.flatten().astype(np.float32)
+        #hldr = view.flatten()
+        #return view.flatten().astype(np.float32)
+        return view.astype(np.float32)
 
 
     def reset(self, env_ind = None):
@@ -1075,6 +1089,310 @@ class Independent_NavigationV7_1(Independent_NavigationV0):
         for handle, agent in self.agents.items():
             rewards[handle] += global_step_reward
         return isdone, rewards
+
+
+##############################################################
+#####   PO Observation spaces
+##############################################################
+
+
+class Independent_NavigationV8_0(Independent_NavigationV0):
+    '''This Env includes a shortest path channel in observation space '''
+    def __init__(self, args):
+        super().__init__(args)
+
+        #Observation settings:
+        self.fully_obs = False
+        self.inc_obstacles = True
+        self.inc_other_agents = True
+        self.inc_other_goals = True #If agent does not have specific goal, only include other agent's goals.
+        self.inc_own_goals = True #This is only applicable to Independet Navigation tasks; In CN goals are everyones goals
+        self.inc_direction_vector = False
+        self.inc_path_grid = True
+
+
+        if self.inc_path_grid:
+            self.init_path_grid()
+        
+        observation_space = self.init_observation_space()
+        self.observation_space = [copy.deepcopy(observation_space) for _ in self.agents]
+
+        #Set to max likely path length
+        self.norm_path_len = self.x_len * self.y_len
+    
+    def init_path_grid(self):
+        #A dict of dict where each dict[id] = {position : Node, ...}
+        self.path_grid = {}
+        for agent_id, agnt in self.agents.items():
+            agnt_goal_id = agnt.id
+            goal = self.goals[agnt_goal_id]
+            assert goal.goal_id == agnt_goal_id
+            self.path_grid[agent_id] = self.graph.dijkstra_search(goal.pos, agnt.pos)
+
+    def _get_path_grid(self, agent):
+        # end_pos = agent.pos
+        # goal_id = agent.id
+        # goal = self.goals[goal_id]
+        # assert goal.goal_id == goal_id
+        # start_pos = goal.pos
+        OBSTACLE_VALUE = 1.0
+        d_view = self.view_d
+        view_dim =  2*d_view + 1
+        view = np.empty((view_dim, view_dim), dtype = object)
+        (x_pos, y_pos) = agent.pos
+        for x_cursor in range(-d_view, d_view + 1):
+            for y_cursor in range(-d_view, d_view + 1):
+                x = x_pos + x_cursor
+                y = y_pos + y_cursor
+                
+                #if out of range
+                if x >= self.x_len or x < 0 or y>= self.y_len or y < 0:
+                    view[d_view + x_cursor,d_view + y_cursor] = OBSTACLE_VALUE #-1.0
+                else:
+                    cell_obj = self.get(x,y)
+                    cell_types = [c.type for c in cell_obj]
+                    if 'obstacle' in cell_types:
+                        view[d_view + x_cursor,d_view + y_cursor] = OBSTACLE_VALUE #-1.0
+                    else:
+                        pos = tuple((x, y))
+                        if pos in self.path_grid[agent.id]:
+                            node = self.path_grid[agent.id][pos]
+                            cost_to_go = node.move_cost / self.norm_path_len
+                            view[d_view + x_cursor,d_view + y_cursor] = cost_to_go
+                        else:
+                            view[d_view + x_cursor,d_view + y_cursor] =  OBSTACLE_VALUE #-1.0
+                            #print("agent {}  pos {}".format(agent.id, pos))
+        #hldr = view.flatten()
+        #return view.flatten().astype(np.float32)
+        return view.astype(np.float32)
+
+
+class Independent_NavigationV8_1(Independent_NavigationV0):
+    '''This Env includes direction vector observation space '''
+    def __init__(self, args):
+        super().__init__(args)
+
+        #Observation settings:
+        self.fully_obs = False
+        self.inc_obstacles = True
+        self.inc_other_agents = True
+        self.inc_other_goals = True #If agent does not have specific goal, only include other agent's goals.
+        self.inc_own_goals = True #This is only applicable to Independet Navigation tasks; In CN goals are everyones goals
+        self.inc_direction_vector = True
+        self.inc_path_grid = False
+
+
+        if self.inc_path_grid:
+            self.init_path_grid()
+        
+        observation_space = self.init_observation_space()
+        self.observation_space = [copy.deepcopy(observation_space) for _ in self.agents]
+
+        #Set to max likely path length
+        self.norm_path_len = self.x_len * self.y_len
+    
+    def init_path_grid(self):
+        #A dict of dict where each dict[id] = {position : Node, ...}
+        self.path_grid = {}
+        for agent_id, agnt in self.agents.items():
+            agnt_goal_id = agnt.id
+            goal = self.goals[agnt_goal_id]
+            assert goal.goal_id == agnt_goal_id
+            self.path_grid[agent_id] = self.graph.dijkstra_search(goal.pos, agnt.pos)
+
+    def _get_path_grid(self, agent):
+        # end_pos = agent.pos
+        # goal_id = agent.id
+        # goal = self.goals[goal_id]
+        # assert goal.goal_id == goal_id
+        # start_pos = goal.pos
+        OBSTACLE_VALUE = 1.0
+        d_view = self.view_d
+        view_dim =  2*d_view + 1
+        view = np.empty((view_dim, view_dim), dtype = object)
+        (x_pos, y_pos) = agent.pos
+        for x_cursor in range(-d_view, d_view + 1):
+            for y_cursor in range(-d_view, d_view + 1):
+                x = x_pos + x_cursor
+                y = y_pos + y_cursor
+                
+                #if out of range
+                if x >= self.x_len or x < 0 or y>= self.y_len or y < 0:
+                    view[d_view + x_cursor,d_view + y_cursor] = OBSTACLE_VALUE #-1.0
+                else:
+                    cell_obj = self.get(x,y)
+                    cell_types = [c.type for c in cell_obj]
+                    if 'obstacle' in cell_types:
+                        view[d_view + x_cursor,d_view + y_cursor] = OBSTACLE_VALUE #-1.0
+                    else:
+                        pos = tuple((x, y))
+                        if pos in self.path_grid[agent.id]:
+                            node = self.path_grid[agent.id][pos]
+                            cost_to_go = node.move_cost / self.norm_path_len
+                            view[d_view + x_cursor,d_view + y_cursor] = cost_to_go
+                        else:
+                            view[d_view + x_cursor,d_view + y_cursor] = -1.0
+                            #print("agent {}  pos {}".format(agent.id, pos))
+        #hldr = view.flatten()
+        #return view.flatten().astype(np.float32)
+        return view.astype(np.float32)
+
+
+
+class Independent_NavigationV8_2(Independent_NavigationV0):
+    '''Same as Independent_NavigationV8_0, but with 
+    normalisation as 2*[self.x_len + self.y_len]'''
+    def __init__(self, args):
+        super().__init__(args)
+
+        #Observation settings:
+        self.fully_obs = False
+        self.inc_obstacles = True
+        self.inc_other_agents = True
+        self.inc_other_goals = True #If agent does not have specific goal, only include other agent's goals.
+        self.inc_own_goals = True #This is only applicable to Independet Navigation tasks; In CN goals are everyones goals
+        self.inc_direction_vector = False
+        self.inc_path_grid = True
+
+
+        if self.inc_path_grid:
+            self.init_path_grid()
+        
+        observation_space = self.init_observation_space()
+        self.observation_space = [copy.deepcopy(observation_space) for _ in self.agents]
+
+        #Set to max likely path length
+        self.norm_path_len = 2*(self.x_len + self.y_len)
+    
+    def init_path_grid(self):
+        #A dict of dict where each dict[id] = {position : Node, ...}
+        self.path_grid = {}
+        for agent_id, agnt in self.agents.items():
+            agnt_goal_id = agnt.id
+            goal = self.goals[agnt_goal_id]
+            assert goal.goal_id == agnt_goal_id
+            self.path_grid[agent_id] = self.graph.dijkstra_search(goal.pos, agnt.pos)
+
+    def _get_path_grid(self, agent):
+        # end_pos = agent.pos
+        # goal_id = agent.id
+        # goal = self.goals[goal_id]
+        # assert goal.goal_id == goal_id
+        # start_pos = goal.pos
+        OBSTACLE_VALUE = 1.0
+        d_view = self.view_d
+        view_dim =  2*d_view + 1
+        view = np.empty((view_dim, view_dim), dtype = object)
+        (x_pos, y_pos) = agent.pos
+        for x_cursor in range(-d_view, d_view + 1):
+            for y_cursor in range(-d_view, d_view + 1):
+                x = x_pos + x_cursor
+                y = y_pos + y_cursor
+                
+                #if out of range
+                if x >= self.x_len or x < 0 or y>= self.y_len or y < 0:
+                    view[d_view + x_cursor,d_view + y_cursor] = OBSTACLE_VALUE #-1.0
+                else:
+                    cell_obj = self.get(x,y)
+                    cell_types = [c.type for c in cell_obj]
+                    if 'obstacle' in cell_types:
+                        view[d_view + x_cursor,d_view + y_cursor] = OBSTACLE_VALUE #-1.0
+                    else:
+                        pos = tuple((x, y))
+                        if pos in self.path_grid[agent.id]:
+                            node = self.path_grid[agent.id][pos]
+                            cost_to_go = node.move_cost / self.norm_path_len
+                            view[d_view + x_cursor,d_view + y_cursor] = cost_to_go
+                        else:
+                            view[d_view + x_cursor,d_view + y_cursor] =  OBSTACLE_VALUE #-1.0
+                            #print("agent {}  pos {}".format(agent.id, pos))
+        #hldr = view.flatten()
+        #return view.flatten().astype(np.float32)
+        return view.astype(np.float32)
+
+
+class Independent_NavigationV8_3(Independent_NavigationV0):
+    '''Same as Independent_NavigationV8_0, but with 
+    normalisation as 1*[self.x_len + self.y_len]
+    and objects indicated with 2'''
+    def __init__(self, args):
+        super().__init__(args)
+
+        #Observation settings:
+        self.fully_obs = False
+        self.inc_obstacles = True
+        self.inc_other_agents = True
+        self.inc_other_goals = True #If agent does not have specific goal, only include other agent's goals.
+        self.inc_own_goals = True #This is only applicable to Independet Navigation tasks; In CN goals are everyones goals
+        self.inc_direction_vector = False
+        self.inc_path_grid = True
+
+
+        if self.inc_path_grid:
+            self.init_path_grid()
+        
+        observation_space = self.init_observation_space()
+        self.observation_space = [copy.deepcopy(observation_space) for _ in self.agents]
+
+        #Set to max likely path length
+        self.norm_path_len = 1*(self.x_len + self.y_len)
+    
+    def init_path_grid(self):
+        #A dict of dict where each dict[id] = {position : Node, ...}
+        self.path_grid = {}
+        for agent_id, agnt in self.agents.items():
+            agnt_goal_id = agnt.id
+            goal = self.goals[agnt_goal_id]
+            assert goal.goal_id == agnt_goal_id
+            self.path_grid[agent_id] = self.graph.dijkstra_search(goal.pos, agnt.pos)
+
+    def _get_path_grid(self, agent):
+        # end_pos = agent.pos
+        # goal_id = agent.id
+        # goal = self.goals[goal_id]
+        # assert goal.goal_id == goal_id
+        # start_pos = goal.pos
+        OBSTACLE_VALUE = 2.0
+        d_view = self.view_d
+        view_dim =  2*d_view + 1
+        view = np.empty((view_dim, view_dim), dtype = object)
+        (x_pos, y_pos) = agent.pos
+        for x_cursor in range(-d_view, d_view + 1):
+            for y_cursor in range(-d_view, d_view + 1):
+                x = x_pos + x_cursor
+                y = y_pos + y_cursor
+                
+                #if out of range
+                if x >= self.x_len or x < 0 or y>= self.y_len or y < 0:
+                    view[d_view + x_cursor,d_view + y_cursor] = OBSTACLE_VALUE #-1.0
+                else:
+                    cell_obj = self.get(x,y)
+                    cell_types = [c.type for c in cell_obj]
+                    if 'obstacle' in cell_types:
+                        view[d_view + x_cursor,d_view + y_cursor] = OBSTACLE_VALUE #-1.0
+                    else:
+                        pos = tuple((x, y))
+                        if pos in self.path_grid[agent.id]:
+                            node = self.path_grid[agent.id][pos]
+                            cost_to_go = node.move_cost / self.norm_path_len
+                            view[d_view + x_cursor,d_view + y_cursor] = cost_to_go
+                        else:
+                            view[d_view + x_cursor,d_view + y_cursor] =  OBSTACLE_VALUE #-1.0
+                            #print("agent {}  pos {}".format(agent.id, pos))
+        #hldr = view.flatten()
+        #return view.flatten().astype(np.float32)
+        return view.astype(np.float32)
+
+
+
+
+
+##############################################################
+
+
+
+
+
 
 
 

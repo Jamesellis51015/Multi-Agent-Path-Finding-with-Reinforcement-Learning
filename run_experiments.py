@@ -36,8 +36,41 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser("Run Experiment")
     parser.add_argument("--name", type=str)
-    #parser.add_argument("--file_number", type=str)
-    args = parser.parse_args()
+    args1, unkn = parser.parse_known_args()
+
+    secondary_args = []
+    if args1.name == "test":
+      #gen_data_args = ["--name", "generate_PO_FOV_data", "--folder_name", "testing1","--env_name", "independent_navigation-v8_0", "--n_episodes", "4"]
+      bc_train_args = ["--name", "train_PO_FOV_data", "--folder_name", "testing1", "--env_name", "independent_navigation-v8_0"]
+    elif args1.name == "0":
+      #gen_data_args = ["--name", "generate_PO_FOV_data", "--folder_name", "BC1AgentShortestPathV0","--env_name", "independent_navigation-v8_0", "--n_episodes", "5000"]
+      bc_train_args = ["--name", "train_PO_FOV_data", "--folder_name", "BC1AgentShortestPathV0", "--env_name", "independent_navigation-v8_0"]
+    elif args1.name == "1":
+      #gen_data_args = ["--name", "generate_PO_FOV_data", "--folder_name", "BC1AgentDirVecV1","--env_name", "independent_navigation-v8_1", "--n_episodes", "5000"]
+      bc_train_args = ["--name", "train_PO_FOV_data", "--folder_name", "BC1AgentDirVecV1", "--env_name", "independent_navigation-v8_1"]
+    elif args1.name == "2":
+      #gen_data_args = ["--name", "generate_PO_FOV_data", "--folder_name", "BC1AgentShortestPathV2","--env_name", "independent_navigation-v8_2", "--n_episodes", "5000"]
+      bc_train_args = ["--name", "train_PO_FOV_data", "--folder_name", "BC1AgentShortestPathV2", "--env_name", "independent_navigation-v8_2"]
+    elif args1.name == "3":
+      #gen_data_args = ["--name", "generate_PO_FOV_data", "--folder_name", "BC1AgentShortestPathV3","--env_name", "independent_navigation-v8_3", "--n_episodes", "5000"]
+      bc_train_args = ["--name", "train_PO_FOV_data", "--folder_name", "BC1AgentShortestPathV3", "--env_name", "independent_navigation-v8_3"]
+    
+    #secondary_args.append(gen_data_args)
+    secondary_args.append(bc_train_args)
+
+    for second_arg in secondary_args:
+      args, unkn = parser.parse_known_args(second_arg)
+      experiments = [exp, exp2, exp3, exp4, exp5, exp6, exp7, exp8, exp9, exp10, exp11, exp12, exp13, exp14, exp15,exp16]
+      flag = True
+      for ex in experiments:
+          if hasattr(ex, args.name):
+              e = getattr(ex, args.name)
+              e(custom_args = second_arg)
+              flag = False
+      if flag:
+          print("No experiment with that name")
+
+
     #args = parser.parse_args(["--name", "generate_data1"])#"BC_train"])
     #args = parser.parse_args(["--name", "cn_maac_ic3"])
  #   args =  parser.parse_args(["--name", "test_maac_new"])
@@ -53,15 +86,16 @@ if __name__ == "__main__":
     # #generate_data()
 
 
-    experiments = [exp, exp2, exp3, exp4, exp5, exp6, exp7, exp8, exp9, exp10, exp11, exp12, exp13, exp14, exp15,exp16]
-    flag = True
-    for ex in experiments:
-        if hasattr(ex, args.name):
-            e = getattr(ex, args.name)
-            e()
-            flag = False
-    if flag:
-        print("No experiment with that name")
+    # experiments = [exp, exp2, exp3, exp4, exp5, exp6, exp7, exp8, exp9, exp10, exp11, exp12, exp13, exp14, exp15,exp16]
+    # flag = True
+    # for ex in experiments:
+    #     if hasattr(ex, args.name):
+    #         e = getattr(ex, args.name)
+    #         e()
+    #         #e(custom_args = bc_train_args)
+    #         flag = False
+    # if flag:
+    #     print("No experiment with that name")
 
 
   #  from Experiments.exp_ppo_curr import exp_ppo_curr2

@@ -335,6 +335,9 @@ class Grid_Env(Grid):
             channels -= 1
         if self.inc_own_goals == False:
             channels -= 1
+        
+        if self.inc_path_grid:
+            channels += 1
 
         if self.fully_obs:
             view_shape = (self.x_len, self.y_len)
@@ -348,11 +351,11 @@ class Grid_Env(Grid):
             
         if self.inc_direction_vector:
             vector_obs_space = spaces.Box(low=0, high=1, shape= (2,), dtype=float)
-        elif self.inc_path_grid:
-            flat_input = view_shape[1] * view_shape[0]
-            vector_obs_space = spaces.Box(low=0, high=1, shape= (flat_input,), dtype=float)
+        #elif self.inc_path_grid:
+        #    flat_input = view_shape[1] * view_shape[0]
+        #    vector_obs_space = spaces.Box(low=0, high=1, shape= (flat_input,), dtype=float)
 
-        if self.inc_direction_vector or self.inc_path_grid:
+        if self.inc_direction_vector: #or self.inc_path_grid:
             return (map_obs_space, vector_obs_space)
         else:
             return map_obs_space
@@ -777,7 +780,9 @@ class Grid_Env(Grid):
                 if self.inc_direction_vector:
                     observations[handle] = (np.stack(one_hot_observations, 0), self._get_dir_vec(agent, self.goals[handle]))
                 elif self.inc_path_grid:
-                    observations[handle] = (np.stack(one_hot_observations, 0), self._get_path_grid(agent))
+                    one_hot_observations.append(self._get_path_grid(agent))
+                    observations[handle] = np.stack(one_hot_observations, 0)
+                    #observations[handle] = (np.stack(one_hot_observations, 0), self._get_path_grid(agent))
                 else:
                     observations[handle] = np.stack(one_hot_observations, 0)
                 #One hot obsevations contains one-hot representation of: obstacels, other agents, own goals, other agent goals                 

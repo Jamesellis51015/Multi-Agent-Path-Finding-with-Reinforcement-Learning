@@ -160,11 +160,26 @@ class Heuristics():
 
         mstar = Mstar(start, end, self.expand_position, self.get_next_joint_policy_position, self.get_SIC)
 
-        all_actions = mstar.search(start, end)
+        all_actions = mstar.search_OD(start, end)
         print("Time taken for M star: {}".format(time.time() - t2))
         return all_actions
 
+    def mstar_search3(self, start, end):
+        t_hldr1 = time.time()
+        if self.dijkstra_graphs is None:
+            print("Joint policy graphs not initialized. Initialzing now")
+            self.init_joint_policy_graphs(start, end)
+        else:
+            print("Joint policy graphs already present...re-using graphs")
 
+        t2 = time.time()
+        print("Time taken for joint policy graphs: {}".format(t2 - t_hldr1))
+
+        mstar = Mstar(start, end, self.expand_position, self.get_next_joint_policy_position, self.get_SIC)
+
+        all_actions = mstar.search(start, end)
+        print("Time taken for M star: {}".format(time.time() - t2))
+        return all_actions
 
 
     def m_star_search(self, start_config, end_config, ignore = ["agent"]):

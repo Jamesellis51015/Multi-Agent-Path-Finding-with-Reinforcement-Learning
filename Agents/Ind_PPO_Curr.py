@@ -124,7 +124,7 @@ def run(args): #Curriculum train:
     env_args = curr_manager.init_env_args()
     #Determine number of workers for buffer and init env
     buff = PPO_Buffer(env_args.n_agents, args.ppo_workers, args.ppo_rollout_length, args.ppo_recurrent)
-    seed = np.random.randint(0, 10000)
+    seed = np.random.randint(0, 100000)
     env = make_parallel_env(env_args, seed, buff.nworkers)
     #Init ppo model
     ppo = PPO(env.action_space[0].n, env.observation_space[0],

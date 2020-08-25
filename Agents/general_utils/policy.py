@@ -105,6 +105,8 @@ def make_base_policy(policy_type, double_obs_space = False):
     if double_obs_space:
         if policy_type == "mlp":
             base_policy = Mlp_Base2
+        elif policy_type == "primal7":
+            base_policy = PRIMAL_Base7
         else:
             raise Exception("Base policy type not implemented")
         return base_policy
@@ -584,6 +586,9 @@ class PRIMAL_Base6(nn.Module): #For env size  = 5
             self.fc1 = nn.Linear(self.flat_cnn_out_size + cat_end, hidden_dim)
     
     def forward(self, x, cat_end = None):
+
+        if type(x) == tuple:
+            (x, cat_end) = x
         batch_size = x.size(0)
         #x = self.model(x)
 
@@ -645,6 +650,8 @@ class PRIMAL_Base7(nn.Module): #For env size  = 7
         #self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
     
     def forward(self, x, cat_end = None):
+        if type(x) == tuple:
+            (x, cat_end) = x
         batch_size = x.size(0)
         #x = self.model(x)
 

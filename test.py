@@ -14,9 +14,44 @@ from time import sleep
 import torch.nn as nn
 import torch.nn.functional as F
 
+def myf1():
+      parser = argparse.ArgumentParser("abc")
+      parser.add_argument("--a", default = 4, type=int)
+      parser.add_argument("--b", default = 4, type=int)
+      parser.add_argument("--c", default = 4, type=int)
+
+      args2, unkn = parser.parse_known_args()
+      print(args2.a)
+      print(args2.b)
 
 from sklearn.model_selection import ParameterGrid
 if __name__ == "__main__":
+
+   import argparse
+   parser = argparse.ArgumentParser("Generate Data")
+
+    #
+   parser.add_argument("--m", default = 5, type=int)
+   parser.add_argument("--n", default = 4, type=int)
+
+   args1, unkn = parser.parse_known_args()
+   print(args1)
+   args2, unk = parser.parse_known_args(["--m", "22", "--n", "99"])
+   print(args2)
+   #print(vars(args1))
+   # print(args1)
+   # print(unkn)
+
+   # if args1.m == 1:
+   #    myf1()
+   # else:
+   #    print("none")
+
+   
+
+
+
+
    # class A():
    #    def __init__(self, b):
    #       self.b = b
@@ -167,12 +202,15 @@ if __name__ == "__main__":
    # a = PriorityQueue()
    # a.put((1, "a"))
    # a.put((2, "b"))
-   a = np.arange(5)
-   b = np.random.choice(a, 5, replace = False)
+   # a = np.arange(5)
+   # b = np.random.choice(a, 5, replace = False)
 
-   print(b)
+   # print(b)
 
-
+   
+   # while True:
+   #    val = input("Enter your value: ") 
+   #    print(val) 
    # b = (2, "b")
 
    # if b in :
