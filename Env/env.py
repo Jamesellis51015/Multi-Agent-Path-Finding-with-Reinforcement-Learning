@@ -274,7 +274,9 @@ class Independent_NavigationV0(Grid_Env):
             val.goal_id = key
 
         self.graph = Heuristics(self.grid, self)
+        
         self.clear_paths()
+        #print("Not checking if path exists")
         #Set reward function, obsevation space etc
         self.rewards = self.Rewards()
 
@@ -1127,7 +1129,8 @@ class Independent_NavigationV8_0(Independent_NavigationV0):
             agnt_goal_id = agnt.id
             goal = self.goals[agnt_goal_id]
             assert goal.goal_id == agnt_goal_id
-            self.path_grid[agent_id] = self.graph.dijkstra_search(goal.pos, agnt.pos)
+            #self.path_grid[agent_id] = self.graph.dijkstra_search(goal.pos, agnt.pos)
+            self.path_grid[agent_id] = self.graph.BFS(goal.pos, agnt.pos)
 
     def _get_path_grid(self, agent):
         # end_pos = agent.pos
@@ -1198,7 +1201,8 @@ class Independent_NavigationV8_1(Independent_NavigationV0):
             agnt_goal_id = agnt.id
             goal = self.goals[agnt_goal_id]
             assert goal.goal_id == agnt_goal_id
-            self.path_grid[agent_id] = self.graph.dijkstra_search(goal.pos, agnt.pos)
+            # self.path_grid[agent_id] = self.graph.dijkstra_search(goal.pos, agnt.pos)
+            self.path_grid[agent_id] = self.graph.BFS(goal.pos, agnt.pos)
 
     def _get_path_grid(self, agent):
         # end_pos = agent.pos
@@ -1271,7 +1275,8 @@ class Independent_NavigationV8_2(Independent_NavigationV0):
             agnt_goal_id = agnt.id
             goal = self.goals[agnt_goal_id]
             assert goal.goal_id == agnt_goal_id
-            self.path_grid[agent_id] = self.graph.dijkstra_search(goal.pos, agnt.pos)
+            # self.path_grid[agent_id] = self.graph.dijkstra_search(goal.pos, agnt.pos)
+            self.path_grid[agent_id] = self.graph.BFS(goal.pos, agnt.pos)
 
     def _get_path_grid(self, agent):
         # end_pos = agent.pos
@@ -1344,7 +1349,8 @@ class Independent_NavigationV8_3(Independent_NavigationV0):
             agnt_goal_id = agnt.id
             goal = self.goals[agnt_goal_id]
             assert goal.goal_id == agnt_goal_id
-            self.path_grid[agent_id] = self.graph.dijkstra_search(goal.pos, agnt.pos)
+            # self.path_grid[agent_id] = self.graph.dijkstra_search(goal.pos, agnt.pos)
+            self.path_grid[agent_id] = self.graph.BFS(goal.pos, agnt.pos)
 
     def _get_path_grid(self, agent):
         # end_pos = agent.pos
