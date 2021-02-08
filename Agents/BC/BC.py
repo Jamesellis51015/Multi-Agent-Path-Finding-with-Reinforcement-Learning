@@ -11,6 +11,7 @@ from distutils.dir_util import copy_tree
 # import time
 import os
 import torch
+import torch.nn.functional as F
 from Agents.PPO.ppo import PPO
 from Agents.Ind_PPO import benchmark_func
 import math
@@ -310,6 +311,179 @@ def BC_train():
         rend_frames, all_info = benchmark_func(args, ppo, 100, 30, DEVICE)
         logger.benchmark_info(all_info, rend_frames, param["n_epoch"]+1)
 
+def evaluate_checkpoint():
+
+    #CHECKPOINT_PATH = "/home/james/Desktop/Gridworld/EXPERIMENTS/BC1AgentShortestPath_2_V0/BC_BC1AgentShortestPath_2_V0mbsize_32_lr_5e-05_epochs_50_weightdecay_0.0001_N0/checkpoint/checkpoint_40"
+    #experiment_group_name = "Results_Shortest Path"
+
+    #CHECKPOINT_PATH = "/home/james/Desktop/Gridworld/EXPERIMENTS/BC1AgentDirVec_2_V1/BC_BC1AgentDirVec_2_V1mbsize_32_lr_5e-05_epochs_50_weightdecay_0.0001_N0/checkpoint/checkpoint_31"
+    CHECKPOINT_PATH = "/home/james/Desktop/Gridworld/EXPERIMENTS/9_0_0/BC_9_0_0mbsize_32_lr_5e-05_epochs_50_weightdecay_0.0001_N0/checkpoint/checkpoint_31"
+    experiment_group_name = "9_0_0"
+    work_dir = '/home/james/Desktop/Gridworld/EXPERIMENTS/' + experiment_group_name
+    plot_dir = '/home/james/Desktop/Gridworld/CENTRAL_TENSORBOARD/' + experiment_group_name 
+
+    parser = argparse.ArgumentParser("Train arguments")
+    parser.add_argument("--alternative_plot_dir", default="none")
+    parser.add_argument("--working_directory", default="none")
+    parser.add_argument("--name", default="9_0_0_benchmark", type=str, help="Experiment name")
+    parser.add_argument("--replace_checkpoints", default=True, type=bool)
+    #Placeholders:
+    parser.add_argument("--env_name", default="independent_navigation-v8_0", type=str)
+    parser.add_argument("--n_agents", default=1, type=int)
+    parser.add_argument("--map_shape", default=(5,5), type=object)
+    parser.add_argument("--obj_density", default=0.0, type=float)
+    parser.add_argument("--view_d", default=3, type=int)
+    parser.add_argument("--use_default_rewards", default=True, type=bool)
+    parser.add_argument("--use_custom_rewards", default=False, type=bool)
+    parser.add_argument("--base_path", default= "none", type=str)
+    args = parser.parse_args()
+
+    args.working_directory = work_dir
+    args.alternative_plot_dir = plot_dir
+##########
+    args = make_env_args(args, {})
+    env_hldr = make_env(args)
+    observation_space = env_hldr.observation_space[-1]
+
+
+    ppo = PPO(5, observation_space,
+            "primal7", 
+            1, True, 
+        True, 1, 
+            1, 
+            0.001,  0.001, 
+            120, 0.2, 0.01, False,
+            False)
+
+    ppo.load(torch.load(CHECKPOINT_PATH))
+    logger = Logger(args, "NONE" , "none",ppo)
+
+
+    # variable_args_dict = {
+    #     "n_agents": [1],
+    #     "obj_density": [0.0,0.1, 0.2, 0.3], 
+    #     "map_shape": [(30, 30), (40, 40)]
+    # }
+
+    # evaluate_across_evs(ppo, logger, args, variable_args_dict, 1000, 30, 'gpu', greedy=False)
+    
+    # 32 x 32
+    variable_args_dict = {
+        "n_agents": [10,30,35,40,45,50, 60, 70],
+        "obj_density": [0.0,0.1,0.2,0.3], 
+        "map_shape": [(32, 32)]
+    }
+    evaluate_across_evs(ppo, logger, args, variable_args_dict, 1000, 30, 'gpu', greedy=False)
+
+    # 40 x 40
+    variable_args_dict = {
+        "n_agents": [10,30,35,40,45,50, 60, 70],
+        "obj_density": [0.0,0.1,0.2,0.3], 
+        "map_shape": [(40,40)]
+    }
+    evaluate_across_evs(ppo, logger, args, variable_args_dict, 1000, 30, 'gpu', greedy=False)
+
+    # 50 x 50
+    variable_args_dict = {
+        "n_agents": [10,30,35,40,45,50, 60, 70],
+        "obj_density": [0.0,0.1,0.2,0.3], 
+        "map_shape": [(50,50)]
+    }
+    evaluate_across_evs(ppo, logger, args, variable_args_dict, 1000, 30, 'gpu', greedy=False)
+
+
+
+def evaluate_checkpoint2():
+
+    #CHECKPOINT_PATH = "/home/james/Desktop/Gridworld/EXPERIMENTS/BC1AgentShortestPath_2_V0/BC_BC1AgentShortestPath_2_V0mbsize_32_lr_5e-05_epochs_50_weightdecay_0.0001_N0/checkpoint/checkpoint_40"
+    #experiment_group_name = "Results_Shortest Path"
+
+    #CHECKPOINT_PATH = "/home/james/Desktop/Gridworld/EXPERIMENTS/BC1AgentDirVec_2_V1/BC_BC1AgentDirVec_2_V1mbsize_32_lr_5e-05_epochs_50_weightdecay_0.0001_N0/checkpoint/checkpoint_31"
+    #CHECKPOINT_PATH = "/home/james/Desktop/Gridworld/EXPERIMENTS/5_2_0_CL/ppo_arc_primal7_sr_-0.1_ocr_-0.4_acr_-0.4_grr_0.3_fer_2.0_viewd_3_disc_0.5_lambda_1.0_entropy_0.01_minibatch_512_rollouts_256_workers_4_kepochs_8_curr_ppo_cl_inc_size_seed_1_N4/checkpoint/checkpoint_17600"
+    CHECKPOINT_PATH = "/home/james/Desktop/Gridworld/EXPERIMENTS/5_3_0_CL/ppo_arc_primal7_sr_-0.1_ocr_-0.4_acr_-0.4_grr_0.3_fer_2.0_viewd_3_disc_0.5_lambda_1.0_entropy_0.01_minibatch_512_rollouts_256_workers_4_kepochs_8_curr_ppo_cl_inc_size_seed_1_N0/checkpoint/checkpoint_5200"
+    #CHECKPOINT_PATH = "/home/james/Desktop/Gridworld/EXPERIMENTS/9_0_0/BC_9_0_0mbsize_32_lr_5e-05_epochs_50_weightdecay_1e-05_N0/checkpoint/checkpoint_20"
+    experiment_group_name = "5_3_0_CL_benchmark3"
+    work_dir = '/home/james/Desktop/Gridworld/EXPERIMENTS/' + experiment_group_name
+    plot_dir = '/home/james/Desktop/Gridworld/CENTRAL_TENSORBOARD/' + experiment_group_name 
+
+    parser = argparse.ArgumentParser("Train arguments")
+    parser.add_argument("--alternative_plot_dir", default="none")
+    parser.add_argument("--working_directory", default="none")
+    parser.add_argument("--name", default="benchmark3", type=str, help="Experiment name")
+    parser.add_argument("--replace_checkpoints", default=True, type=bool)
+    #Placeholders:
+    parser.add_argument("--env_name", default="independent_navigation-v0", type=str)
+    parser.add_argument("--n_agents", default=1, type=int)
+    parser.add_argument("--map_shape", default=(7,7), type=object)
+    parser.add_argument("--obj_density", default=0.0, type=float)
+    parser.add_argument("--view_d", default=3, type=int)
+    parser.add_argument("--use_default_rewards", default=True, type=bool)
+    parser.add_argument("--use_custom_rewards", default=False, type=bool)
+    parser.add_argument("--base_path", default= "none", type=str)
+    args = parser.parse_args()
+
+    args.working_directory = work_dir
+    args.alternative_plot_dir = plot_dir
+##########
+    args = make_env_args(args, {})
+    env_hldr = make_env(args)
+    observation_space = env_hldr.observation_space[-1]
+
+
+    ppo = PPO(5, observation_space,
+            "primal7", 
+            1, True, 
+        True, 1, 
+            1, 
+            0.001,  0.001, 
+            120, 0.2, 0.01, False,
+            False)
+
+    ppo.load(torch.load(CHECKPOINT_PATH))
+    logger = Logger(args, "NONE" , "none",ppo)
+
+
+    # variable_args_dict = {
+    #     "n_agents": [10,20,30,40],
+    #     "obj_density": [0.0,0.1, 0.2, 0.3], 
+    #     "map_shape": [(32, 32)]
+    # }
+
+    # evaluate_across_evs(ppo, logger, args, variable_args_dict, 200, 10, 'gpu', greedy=False)
+    
+    variable_args_dict = {
+        "n_agents": [4],
+        "obj_density": [0.0, 0.1,0.2,0.3], 
+        "map_shape": [(7, 7)]
+    }
+    evaluate_across_evs(ppo, logger, args, variable_args_dict, 500, 30, 'gpu', greedy=False)
+
+
+    # variable_args_dict = {
+    #     "n_agents": [2,4,8,16],
+    #     "obj_density": [0.0], 
+    #     "map_shape": [(7, 7)]
+    # }
+    # evaluate_across_evs(ppo, logger, args, variable_args_dict, 500, 30, 'gpu', greedy=False)
+
+    # # 40 x 40
+    # variable_args_dict = {
+    #     "n_agents": [10,30,35,40,45,50, 60, 70],
+    #     "obj_density": [0.0,0.1,0.2,0.3], 
+    #     "map_shape": [(40,40)]
+    # }
+    # evaluate_across_evs(ppo, logger, args, variable_args_dict, 1000, 30, 'gpu', greedy=False)
+
+    # # 50 x 50
+    # variable_args_dict = {
+    #     "n_agents": [10,30,35,40,45,50, 60, 70],
+    #     "obj_density": [0.0,0.1,0.2,0.3], 
+    #     "map_shape": [(50,50)]
+    # }
+    # evaluate_across_evs(ppo, logger, args, variable_args_dict, 1000, 30, 'gpu', greedy=False)
+
+
+
 
 def evaluate_across_evs(policy, logger, env_args, variable_args_dict, num_episodes, render_len, device, greedy=False): 
     param_grid = ParameterGrid(variable_args_dict)
@@ -327,9 +501,10 @@ def evaluate_across_evs(policy, logger, env_args, variable_args_dict, num_episod
             else:
                 end_str += str(v)
         if greedy:
-            end_str += "_Geedy"
+            end_str += "_Greedy"
         else:
             end_str += "_NotGreedy"
+            
         rend_frames, all_info = benchmark_func(this_env_args, policy, num_episodes, render_len, device, greedy=greedy)
         logger.init_custom_benchmark_logging_fldr(end_str)
         logger.benchmark_info(all_info, rend_frames, 0, end_str = end_str, dont_init_ben = True)
@@ -360,7 +535,7 @@ def train_PO_FOV_data(custom_args = None):
                 else:
                     raise Exception("Data incorrect length")
                 (a_pred, _, _, _) = ppo_policy.actors[0].forward(ob)
-                valid_loss_hldr.append(loss_f(a_pred, a).item())
+                valid_loss_hldr.append(loss_f(F.softmax(a_pred), a).item())
         return np.mean(valid_loss_hldr)
             #valid_loss = {"validation_loss": torch.mean(valid_loss_hldr).item()}
             #logger.plot_tensorboard(valid_loss)
@@ -406,6 +581,7 @@ def train_PO_FOV_data(custom_args = None):
     parser.add_argument("--view_d", default=3, type=int)
     parser.add_argument("--use_default_rewards", default=True, type=bool)
     parser.add_argument("--use_custom_rewards", default=False, type=bool)
+    parser.add_argument("--base_path", default= "none", type=str)
 
     #Best previous performing hyp param is: mb:32 lr:5e-5  weightdecay: 0.0001 
 
@@ -416,17 +592,35 @@ def train_PO_FOV_data(custom_args = None):
 
 
     experiment_group_name = args.folder_name #"BC_5x5"
-    work_dir = '/home/james/Desktop/Gridworld/EXPERIMENTS/' + experiment_group_name
-    plot_dir = '/home/james/Desktop/Gridworld/CENTRAL_TENSORBOARD/' + experiment_group_name 
+    if args.working_directory == "none":
+        import __main__
+        work_dir = os.path.join(os.path.dirname(__main__.__file__), '/EXPERIMENTS/', experiment_group_name)
+    else:
+        work_dir = '/home/james/Desktop/Gridworld/EXPERIMENTS/' + experiment_group_name
+    
+    if args.alternative_plot_dir == "none":
+        import __main__
+        plot_dir = os.path.join(os.path.dirname(__main__.__file__), '/CENTRAL_TENSORBOARD/', experiment_group_name)
+    else:
+        plot_dir = '/home/james/Desktop/Gridworld/CENTRAL_TENSORBOARD/' + experiment_group_name 
 
-
+    work_dir = "/home/jellis/workspace2/gridworld/EXPERIMENTS/" + args.folder_name
+    plot_dir ="/home/jellis/workspace2/gridoworld/CENTRAL_TENSORBOARD/"+ args.folder_name
     args.working_directory = work_dir
     args.alternative_plot_dir = plot_dir
 
-    BASE_DATA_FOLDER_PATH = '/home/james/Desktop/Gridworld/BC_Data'
+    #BASE_DATA_FOLDER_PATH = '/home/james/Desktop/Gridworld/BC_Data'
+
+    if args.base_path == "none":
+        import __main__
+        BASE_DATA_FOLDER_PATH = os.path.dirname(__main__.__file__)
+        BASE_DATA_FOLDER_PATH = os.path.join(BASE_DATA_FOLDER_PATH, "BC_Data")
+    else:
+        #base_path = args.base_path
+        BASE_DATA_FOLDER_PATH = '/home/james/Desktop/Gridworld/BC_Data'
 
     data_fldr_path = os.path.join(BASE_DATA_FOLDER_PATH, args.folder_name)
-
+    data_fldr_path = "/home/jellis/workspace2/BC_Data/"
     if is_processesed(data_fldr_path):
         train_f, val_f, test_f = get_data_files(data_fldr_path)
     else:
@@ -506,16 +700,36 @@ def train_PO_FOV_data(custom_args = None):
         obs = (ppo.tens_to_dev(DEVICE, torch.from_numpy(obs[0]).float()), \
             ppo.tens_to_dev(DEVICE, torch.from_numpy(obs[1]).float()))
     else:
-        obs = [ ppo.tens_to_dev(DEVICE, torch.from_numpy(obs).float()) ]
+        obs = [ppo.tens_to_dev(DEVICE, torch.from_numpy(obs).float())]
 
     val_action_labels = ppo.tens_to_dev(DEVICE, torch.from_numpy(actions).reshape((-1,1)).float())
     valid_dataset = torch.utils.data.TensorDataset(*obs, val_action_labels)
     valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.mb_size, shuffle=True)
 
+    #Make test data_loader
+    (obs, actions) = zip(*test_data)
+    #(obs, actions) = (np.array(obs), np.array(actions))
+    if type(observation_space) == tuple:
+        (obs1, obs2) = zip(*obs)
+        (obs, actions) = ((np.array(obs1), np.array(obs2)), np.array(actions))
+    else:
+        (obs, actions) = (np.array(obs), np.array(actions))
+    #obs = ppo.tens_to_dev(DEVICE, torch.from_numpy(obs).float())
+    if type(observation_space) == tuple:
+        obs = (ppo.tens_to_dev(DEVICE, torch.from_numpy(obs[0]).float()), \
+            ppo.tens_to_dev(DEVICE, torch.from_numpy(obs[1]).float()))
+    else:
+        obs = [ppo.tens_to_dev(DEVICE, torch.from_numpy(obs).float())]
+
+    test_action_labels = ppo.tens_to_dev(DEVICE, torch.from_numpy(actions).reshape((-1,1)).float())
+    test_dataset = torch.utils.data.TensorDataset(*obs, test_action_labels)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.mb_size, shuffle=True)
+
     optimizer = optim.Adam(ppo.actors[0].parameters(), lr = args.lr, weight_decay=args.weight_decay)
 
     #Train:
     prev_val_loss = 1e6
+    best_epoch_nr = None
     val_loss_is_greater_cntr = 0
     val_loss_is_greater_threshhold = 8
     best_policy = None
@@ -533,7 +747,7 @@ def train_PO_FOV_data(custom_args = None):
             else:
                 raise Exception("Data incorrect length")
             (a_pred, _, _, _) = ppo.actors[0].forward(ob)
-            loss = loss_f(a_pred, a)
+            loss = loss_f(F.softmax(a_pred), a)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -550,14 +764,18 @@ def train_PO_FOV_data(custom_args = None):
         print("iterations: {}".format(iterations))
         epoch_loss = np.mean(epoch_loss_hldr)
         valid_loss = get_validation_loss(valid_loader, ppo)
+        test_loss = get_validation_loss(test_loader, ppo)
         log_info = {"train_loss": epoch_loss,
-                    "validation_loss": valid_loss}
+                    "validation_loss": valid_loss,
+                    "test_loss": test_loss}
+                    
         logger.plot_tensorboard_custom_keys(log_info, external_iteration=epoch)
         if valid_loss < prev_val_loss:
             save(ppo, logger, epoch)
             best_policy = copy.deepcopy(ppo)
             prev_val_loss = valid_loss
             val_loss_is_greater_cntr = 0
+            best_epoch_nr = epoch
         else:
             val_loss_is_greater_cntr +=1
         
@@ -568,18 +786,52 @@ def train_PO_FOV_data(custom_args = None):
             break
     print("Done")
 
+    # free up memory:
+    try:
+        del train_data 
+        del val_data 
+        del test_data 
+        del action_labels 
+        del train_dataset
+        del train_loader
+        del val_action_labels
+        del valid_dataset
+        del valid_loader
+    except:
+        pass
 
 
-    #Evaluate best policy across all ens
+
+    # #Evaluate best policy across all ens
+    # assert not best_policy is None
+    # print("Best epoch nr is {}".format(best_epoch_nr))
+    # variable_args_dict = {
+    #     "obj_density": [0.0,0.1,0.2,0.3], 
+    #     "map_shape": [7,10,15,20,25,30]
+    # }
+    # variable_args_dict["map_shape"] = [(ms, ms) for ms in variable_args_dict["map_shape"]]
+    # #evaluate_across_evs(best_policy, logger, args, variable_args_dict, 1000, 30, DEVICE, greedy=True)
+    # evaluate_across_evs(best_policy, logger, args, variable_args_dict, 1000, 30, DEVICE, greedy=False)
+
+
     assert not best_policy is None
-    variable_args_dict = {
-        "obj_density": [0.0,0.1,0.2,0.3], 
-        "map_shape": [5,7,10,15]
-    }
-    variable_args_dict["map_shape"] = [(ms, ms) for ms in variable_args_dict["map_shape"]]
-    evaluate_across_evs(best_policy, logger, args, variable_args_dict, 100, 50, DEVICE, greedy=True)
-    evaluate_across_evs(best_policy, logger, args, variable_args_dict, 100, 50, DEVICE, greedy=False)
+    print("Best epoch nr is {}".format(best_epoch_nr))
 
+    # 32 x 32
+    variable_args_dict = {
+        "n_agents": [4, 10,30,35,40,45,50, 60, 70],
+        "obj_density": [0.0,0.1,0.2,0.3], 
+        "map_shape": [(32,32)]
+    }
+    evaluate_across_evs(best_policy, logger, args, variable_args_dict, 1000, 30, DEVICE, greedy=False)
+
+    # 40 x 40
+    variable_args_dict = {
+        "n_agents": [4, 10,30,35,40,45,50, 60, 70],
+        "obj_density": [0.0,0.1,0.2,0.3], 
+        "map_shape": [(40,40)]
+    }
+    evaluate_across_evs(best_policy, logger, args, variable_args_dict, 1000, 30, DEVICE, greedy=False)
 
 
 def make_env_args(args_parse, args_dict):
@@ -637,7 +889,10 @@ def generate_PO_FOV_data(custom_args = None):
     gen_dat_custom_args.extend(["--view_d", "3"])
 
     ob_dens = [0.0,0.1,0.2,0.3]
-    env_sizes = [5,7,10]
+    env_sizes = [10,20,30]
+
+    # ob_dens = [0.0]
+    # env_sizes = [30]
 
     for e_s in env_sizes:
         for ob_d in ob_dens:
@@ -647,3 +902,131 @@ def generate_PO_FOV_data(custom_args = None):
             gen_dat_custom_args.extend(["--data_name", dat_name])
             generate_data(custom_args=gen_dat_custom_args)
 
+
+#### Experiments: Imitation Learning Approach
+#############################################
+
+def generate_9_0_0(custom_args = None): 
+    '''Generates 5000 samples of each env '''
+    parser = argparse.ArgumentParser("Generate PO FOV data")
+    parser.add_argument("--folder_name", default='9_0_0', type=str)
+    parser.add_argument("--env_name", default='independent_navigation-v8_0', type= str)
+    parser.add_argument("--n_episodes", default=50, type= int)
+    parser.add_argument("--n_agents", default=1, type= int)
+    if custom_args is None:
+        gen_args, unkn = parser.parse_known_args()
+    else:
+        gen_args, unkn = parser.parse_known_args(custom_args)
+
+    gen_dat_custom_args = []
+    gen_dat_custom_args.extend(["--env_name", gen_args.env_name])
+    gen_dat_custom_args.extend(["--folder_name", gen_args.folder_name])
+    gen_dat_custom_args.extend(["--n_agents", str(gen_args.n_agents)])
+    
+    gen_dat_custom_args.extend(["--n_episodes", str(gen_args.n_episodes)])
+    gen_dat_custom_args.extend(["--view_d", "3"])
+
+    env_sizes = [10]
+    nagents = [4]
+    ob_dens = [0.0,0.1,0.2,0.3]
+
+    for e_s in env_sizes:
+        for n in nagents:
+            for ob_d in ob_dens:
+                gen_dat_custom_args.extend(["--map_shape", str(e_s)])
+                gen_dat_custom_args.extend(["--obj_density", str(ob_d)])
+                dat_name = "envsize_" + str(e_s) + "_obdensity_" + str(ob_d)
+                gen_dat_custom_args.extend(["--data_name", dat_name])
+                generate_data(custom_args=gen_dat_custom_args)
+
+def generate_9_0_1(custom_args = None): 
+    '''Generates 5000 samples of each env '''
+    parser = argparse.ArgumentParser("Generate PO FOV data")
+    parser.add_argument("--folder_name", default='9_0_0', type=str)
+    parser.add_argument("--env_name", default='independent_navigation-v8_0', type= str)
+    parser.add_argument("--n_episodes", default=5000, type= int)
+    parser.add_argument("--n_agents", default=1, type= int)
+    if custom_args is None:
+        gen_args, unkn = parser.parse_known_args()
+    else:
+        gen_args, unkn = parser.parse_known_args(custom_args)
+
+    gen_dat_custom_args = []
+    gen_dat_custom_args.extend(["--env_name", gen_args.env_name])
+    gen_dat_custom_args.extend(["--folder_name", gen_args.folder_name])
+    #gen_dat_custom_args.extend(["--n_agents", str(gen_args.n_agents)])
+    
+    gen_dat_custom_args.extend(["--n_episodes", str(gen_args.n_episodes)])
+    gen_dat_custom_args.extend(["--view_d", "3"])
+
+    # 10x10 Env:
+    env_sizes = [10]
+    nagents = [4,8,12,16,18]
+    ob_dens = [0.0,0.1,0.2,0.3]
+
+    for e_s in env_sizes:
+        for n in nagents:
+            for ob_d in ob_dens:
+                gen_dat_custom_args.extend(["--map_shape", str(e_s)])
+                gen_dat_custom_args.extend(["--obj_density", str(ob_d)])
+                gen_dat_custom_args.extend(["--n_agents", str(gen_args.n_agents)])
+                dat_name = "envsize_" + str(e_s) + "_nagents_" + str(n) + "_obdensity_" + str(ob_d)
+                gen_dat_custom_args.extend(["--data_name", dat_name])
+                generate_data(custom_args=gen_dat_custom_args)
+    
+    # 15 x 15
+    env_sizes = [15]
+    nagents = [10,15,20]
+    ob_dens = [0.0,0.1,0.2,0.3]
+    for e_s in env_sizes:
+        for n in nagents:
+            for ob_d in ob_dens:
+                gen_dat_custom_args.extend(["--map_shape", str(e_s)])
+                gen_dat_custom_args.extend(["--obj_density", str(ob_d)])
+                gen_dat_custom_args.extend(["--n_agents", str(gen_args.n_agents)])
+                dat_name = "envsize_" + str(e_s) + "_nagents_" + str(n) + "_obdensity_" + str(ob_d)
+                gen_dat_custom_args.extend(["--data_name", dat_name])
+                generate_data(custom_args=gen_dat_custom_args)
+###############################################
+    # 20 x 20
+    env_sizes = [20]
+    nagents = [20,25,30,35]
+    ob_dens = [0.0,0.1,0.2,0.3]
+    for e_s in env_sizes:
+        for n in nagents:
+            for ob_d in ob_dens:
+                gen_dat_custom_args.extend(["--map_shape", str(e_s)])
+                gen_dat_custom_args.extend(["--obj_density", str(ob_d)])
+                gen_dat_custom_args.extend(["--n_agents", str(gen_args.n_agents)])
+                dat_name = "envsize_" + str(e_s) + "_nagents_" + str(n) + "_obdensity_" + str(ob_d)
+                gen_dat_custom_args.extend(["--data_name", dat_name])
+                generate_data(custom_args=gen_dat_custom_args)
+
+    # 25 x 25
+    env_sizes = [25]
+    nagents = [25,30,35,40]
+    ob_dens = [0.0,0.1,0.2,0.3]
+    for e_s in env_sizes:
+        for n in nagents:
+            for ob_d in ob_dens:
+                gen_dat_custom_args.extend(["--map_shape", str(e_s)])
+                gen_dat_custom_args.extend(["--obj_density", str(ob_d)])
+                gen_dat_custom_args.extend(["--n_agents", str(gen_args.n_agents)])
+                dat_name = "envsize_" + str(e_s) + "_nagents_" + str(n) + "_obdensity_" + str(ob_d)
+                gen_dat_custom_args.extend(["--data_name", dat_name])
+                generate_data(custom_args=gen_dat_custom_args)
+
+
+    # 30 x 30
+    env_sizes = [32]
+    nagents = [30,35,40, 45,50]
+    ob_dens = [0.0,0.1,0.2,0.3]
+    for e_s in env_sizes:
+        for n in nagents:
+            for ob_d in ob_dens:
+                gen_dat_custom_args.extend(["--map_shape", str(e_s)])
+                gen_dat_custom_args.extend(["--obj_density", str(ob_d)])
+                gen_dat_custom_args.extend(["--n_agents", str(gen_args.n_agents)])
+                dat_name = "envsize_" + str(e_s) + "_nagents_" + str(n) + "_obdensity_" + str(ob_d)
+                gen_dat_custom_args.extend(["--data_name", dat_name])
+                generate_data(custom_args=gen_dat_custom_args)

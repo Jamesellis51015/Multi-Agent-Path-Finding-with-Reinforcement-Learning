@@ -22,7 +22,7 @@ import enum
 import copy
 from tabulate import tabulate
 
-CELL_PIXELS = 32
+CELL_PIXELS = 16#32
 
 
 OBJECT_TO_IDX = {
@@ -43,7 +43,45 @@ COLORS = {
       0: np.array([255, 0, 0]),
       1: np.array([0, 0, 255]),
       2: np.array([255, 255, 0]),
-      3: np.array([51, 255, 255])
+      3: np.array([51, 255, 255]),
+      4: np.array([0,255,0]),
+      5: np.array([255,0,255]),
+      6: np.array([128,0,0]),
+      7: np.array([128,128,0]),
+      8: np.array([0,128,0]),
+      9: np.array([128,0,128]),
+      10: np.array([0,128,128]),
+      11: np.array([0,0,128]),
+      12: np.array([255,69,0]),
+      13: np.array([255,140,0]),
+      14: np.array([255,215,0]),
+      15: np.array([184,134,11]),
+      16: np.array([238,232,170]),
+      17: np.array([128,128,0]),
+      18: np.array([154,205,50]),
+      19: np.array([178,34,34]),
+      20: np.array([85,107,47]),
+      21: np.array([107,142,35]),
+      22: np.array([124,252,0]),
+      23: np.array([102,205,170]),
+      24: np.array([32,178,170]),
+      25: np.array([70,130,180]),
+      26: np.array([139,69,19]),
+      27: np.array([210,105,30]),
+      28: np.array([210,180,140]),
+      29: np.array([75,0,130]),
+      30: np.array([138,43,226]),
+      31: np.array([245,222,179]),
+      32: np.array([100,149,237]),
+      33: np.array([192,192,192]),
+      34: np.array([127,255,212]),
+      35: np.array([233,150,122]),
+      36: np.array([188,143,143]),
+      37: np.array([95,158,160]),
+      38: np.array([0,191,255]),
+      39: np.array([34,139,34]),
+      40: np.array([139,0,139])
+
 }
 # AGENT_COLOURS = {
 #   0: np.array([255, 0, 0]),
@@ -113,11 +151,12 @@ class Goal(Empty):
     def render(self, r):
         custom = None
         if self.goal_id != None:
-            if self.goal_id < 4:
+            if self.goal_id < 41:
                 self.color = self.goal_id
-            elif self.goal_id > 3:
-                i = self.goal_id
-                custom = np.array([255/(i-1), 255/(i-2), 255/(i-3)])
+            elif self.goal_id > 40:
+                self.color = self.goal_id % 40
+                # i = self.goal_id
+                # custom = np.array([255/(i-1), 255/(i-2), 255/(i-3)])
             else:
                 raise Exception("ID not in range")
         self._set_color(r, custom=custom)
@@ -140,11 +179,12 @@ class Agent(Empty):
     def render(self, r):
         custom = None
         if self.id != None:
-            if self.id < 4:
+            if self.id < 41:
                 self.color = self.id
-            elif self.id > 3:
-                i = self.id
-                custom = np.array([255/(i-1), 255/(i-2), 255/(i-3)])
+            elif self.id > 40:
+                self.color = self.id % 40
+                # i = self.id
+                # custom = np.array([255/(i-1), 255/(i-2), 255/(i-3)])
             else:
                 raise Exception("ID not in range")
         self._set_color(r, custom=custom)
@@ -258,8 +298,9 @@ class Grid_Env(Grid):
         if self.x_len != self.y_len:
             raise Exception("Currently only support square map shapes")
         super().__init__(self.x_len, self.y_len)
-        #self.max_step = int(math.floor(self.x_len * self.y_len*1.5))
-        self.max_step = int(math.floor((self.x_len * self.y_len)))
+        #self.max_step = int(math.floor(self.x_len * self.y_len))
+        self.max_step = 256 #int(math.floor(3*(self.x_len + self.y_len)))
+       # self.max_step = int(math.floor(3*(self.x_len + self.y_len)))
         self.step_count = 0
         #Agents:
         # self.agents, self.goals = self._populate_grid(obj_map)

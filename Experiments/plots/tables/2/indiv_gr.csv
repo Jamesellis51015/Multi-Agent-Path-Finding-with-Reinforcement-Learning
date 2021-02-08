@@ -1,5 +1,0 @@
-Architecture,total_steps,total_agent_collisions,total_obstacle_collisions,agent_dones,all_agents_on_goal
-PPO_0.1,18.59$\pm$3.0,1.37$\pm$1.4,0.56$\pm$1.0,0.81$\pm$0.1,0.45$\pm$0.2
-PPO_1.0,16.88$\pm$3.1,2.33$\pm$2.2,0.87$\pm$1.4,0.83$\pm$0.1,0.5$\pm$0.2
-MAAC_0.1,26.0$\pm$0.0,0.02$\pm$0.2,0.01$\pm$0.1,0.0$\pm$0.0,0.0$\pm$0.0
-MAAC_1.0,20.37$\pm$8.7,1.85$\pm$4.7,0.84$\pm$1.7,0.71$\pm$0.3,0.33$\pm$0.5

@@ -32,7 +32,7 @@ class CurriculumLogger():
 
 
         #Over the number of iterations
-        self.NUM_THRESHOLD_VAR = 10
+        self.NUM_THRESHOLD_VAR = 20
         self.threshold_key = threshold_key
         self.thresh_var_hldr = [np.zeros(self.NUM_THRESHOLD_VAR) for _ in self.curr]
         self.thresh_var_cntr = [0 for _ in self.curr]
@@ -119,7 +119,7 @@ class CurriculumLogger():
             #all_dirs = [a[1] for a in all_]
             the_dir = [a for a in all_dirs if work_dir_name in a]
 
-            if len(the_dir) > 1:
+            if len(the_dir) >= 1:
                 ind_ = [int(a.split("N")[-1]) for a in the_dir]
                 max_ind = max(ind_)
                 max_ind = ind_.index(max_ind)
@@ -127,6 +127,8 @@ class CurriculumLogger():
             elif len(the_dir) == 0:
                 raise Exception("Working directory not found")
 
+            #print(parent_work_dir)
+            #print(the_dir)
             work_dir = parent_work_dir + the_dir
             self.args.working_directory = work_dir
             self.saved_info = self.load_info(work_dir + "/checkpoint")
@@ -164,6 +166,8 @@ class CurriculumLogger():
                                 "episode": 0,
                                 "frames": [], 
                                 "prev_iter": None}
+
+        self.bc_counter = 0
         
     
     def add_threshold_var(self, curr_id, var):
@@ -183,25 +187,35 @@ class CurriculumLogger():
         return SummaryWriter(bench_dir)
 
         
-    def benchmark(self, curr_id):
+    def benchmark(self, curr_id, own_iteration = None):
         #run benchmark func and log results
+        if own_iteration is None:
+            this_iteration = self.tracking_info[curr_id]["iterations"]
+        else:
+            this_iteration = own_iteration
         env_args = self.curr[curr_id]
         frames, terminal_infos = self.benchmark_func(env_args, self.args, \
             self.model, self.args.benchmark_num_episodes, self.args.benchmark_render_length, self.model.current_device)
         render_path = self.sub_benchmark_dir[curr_id] + "/benchmark_" + \
-            str(self.tracking_info[curr_id]["iterations"])+ '.mp4'
+            str(this_iteration)+ '.mp4'
         clip = mpy.ImageSequenceClip(frames, fps = 5)
         clip.write_videofile(render_path)
         
         writer = self.init_sub_sub_benchmark_dir(self.sub_benchmark_dir[curr_id]\
-            , self.tracking_info[curr_id]["iterations"])
+            , this_iteration)
         for i, inf in enumerate(terminal_infos):
             for key in self.log_keys:
                 writer.add_scalar(key, inf[key], i)
         writer.close()
 
 
-    def log(self,curr_id, non_ter_infos, extra_states):
+    def log_bc(self, info_dic):
+        global_writer = self.global_plot_writer
+        for k,v in info_dic.items():
+            global_writer.add_scalar(k, v, self.bc_counter)     
+        self.bc_counter += 1
+
+    def log(self,curr_id, non_ter_infos, extra_stats):
         '''Logs infos at end of every iteration '''
         #ignore extra stats
 
@@ -223,6 +237,12 @@ class CurriculumLogger():
                 self.add_threshold_var(curr_id, avrg)
             sub_writer.add_scalar(key, avrg, iteration)
             global_writer.add_scalar(key, avrg, self.global_info["global_iterations"])
+       
+        #log extra stats:
+        for k, v in extra_stats.items():
+            if v is not None:
+                global_writer.add_scalar(k, v, self.global_info["global_iterations"])
+
         #log tracking info
         for key, value in self.tracking_info[curr_id].items():
             sub_writer.add_scalar(key, value, iteration)

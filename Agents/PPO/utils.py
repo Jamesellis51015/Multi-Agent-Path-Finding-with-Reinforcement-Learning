@@ -3,6 +3,7 @@ import torch as torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from utils.nadam import Nadam
 from gym import spaces
 from Agents.general_utils.policy import make_base_policy
 from Agents.PPO.env_wrappers import SubprocVecEnv, DummyVecEnv
@@ -49,8 +50,10 @@ def make_actor_net(base_policy_type,double_obs_space = False, recurrent = False,
 
             if self.blocking:
                 self.fc_block_mid = nn.Linear(hidden_dim, hidden_dim)
-                self.fc_block_out = nn.Linear(hidden_dim, 2)
+                #self.fc_block_out = nn.Linear(hidden_dim, 2)
+                self.fc_block_out = nn.Linear(hidden_dim, 1)
             self.optimizer = optim.Adam(self.parameters(), lr =lr)
+            #self.optimizer = Nadam(self.parameters(), lr = lr)
             
         def forward(self, x, hid_cell_state = None):
             x = super(Actor, self).forward(x)
@@ -62,10 +65,12 @@ def make_actor_net(base_policy_type,double_obs_space = False, recurrent = False,
                 x = self.nonlin(x)
             else:
                 x = self.nonlin(self.fc_mid(x))
-            x_act = F.softmax(self.fc_out(x))
+            #x_act = F.softmax(self.fc_out(x))
+            x_act = self.fc_out(x)
             if self.blocking:
                 x_block = self.nonlin(self.fc_block_mid(x))
-                x_block = self.fc_block_out(x_block) #softmax removed since incuded in loss f
+                #x_block = self.fc_block_out(x_block) #softmax removed since incuded in loss f
+                x_block = F.sigmoid(self.fc_block_out(x_block)) #softmax removed since incuded in loss f
             else:
                 x_block = None
             return (x_act, hx, cx, x_block)
@@ -73,18 +78,18 @@ def make_actor_net(base_policy_type,double_obs_space = False, recurrent = False,
         def take_action(self, obs, greedy = False, hid_cell_state = None, valid_act = None):
             (a_probs, hx, cx, x_block) = self.forward(obs, hid_cell_state)
             if greedy:
-                a_select = torch.argmax(a_probs, dim=-1, keepdim= True)
+                a_select = torch.argmax(F.softmax(a_probs), dim=-1, keepdim= True)
             else:
-                a_probs_new = a_probs.clone()
+                a_probs_new = F.softmax(a_probs.clone().detach())
                 if not valid_act is None:
                     assert a_probs.size(0) == 1
                     non_valid = set([i for i in range(a_probs.size(-1))]) - set(valid_act)
-                    if len(non_valid) != 0 and len(non_valid) != a_probs.size(0):
+                    if len(non_valid) != 0: #and len(non_valid) != a_probs.size(0):
                         idx = torch.tensor(list(non_valid))
                         a_probs_new[0,idx] = 0
                 if a_probs_new.sum() == 0:
                     print("a_prob_new is zero")
-                    a_probs_new = a_probs.clone()
+                    a_probs_new = F.softmax(a_probs.clone())
                 a_select = torch.multinomial(a_probs_new, 1)
             return a_probs, a_select, (hx, cx), x_block
 
@@ -140,6 +145,104 @@ def make_value_net(base_policy_type,double_obs_space = False, recurrent = False)
             self.optimizer.step()
     return Critic
 
+
+
+
+def make_primal_net(base_policy_type, double_obs_space = False,recurrent=True, blocking = False):
+    # recurrent = True
+    print("Recurrent is: {}".format(recurrent))
+    BasePoliy = make_base_policy(base_policy_type,double_obs_space)
+    class Actor(BasePoliy):
+        def __init__(self, observation_space, hidden_dim, action_dim, lr = 0.001, nonlin = F.relu):
+            if double_obs_space:
+                dim1_shape = observation_space[0].shape
+                dim2 = observation_space[1].shape[0]
+                if "mlp" in base_policy_type:
+                    super(Actor, self).__init__(dim1_shape,hidden_dim, dim2, nonlin= nonlin)
+                else:
+                    super(Actor, self).__init__(dim1_shape,hidden_dim, nonlin= nonlin, cat_end = dim2)
+            else:
+                super(Actor, self).__init__(observation_space, hidden_dim, nonlin= nonlin)
+            self.recurrent = recurrent
+            self.blocking = blocking
+            self.nonlin = nonlin
+            
+            self.act_mid = nn.Linear(hidden_dim, hidden_dim)
+            self.act_out = nn.Linear(hidden_dim, action_dim)
+
+            self.value_mid = nn.Linear(hidden_dim, hidden_dim)
+            self.value_out = nn.Linear(hidden_dim, 1)
+
+            if recurrent:
+                self.lstm = nn.LSTMCell(self.hidden_dim, hidden_dim)
+            else:
+                self.fc_mid = nn.Linear(self.hidden_dim, hidden_dim)
+            
+            #middle layers before LSTM:
+            self.fc_mid1 = nn.Linear(hidden_dim, hidden_dim)
+            self.fc_mid2 = nn.Linear(hidden_dim, hidden_dim)
+
+
+
+            if self.blocking:
+                self.fc_block_mid = nn.Linear(hidden_dim, hidden_dim)
+                #self.fc_block_out = nn.Linear(hidden_dim, 2)
+                self.fc_block_out = nn.Linear(hidden_dim, 1)
+            self.optimizer = optim.Adam(self.parameters(), lr =lr)
+            #self.optimizer = Nadam(self.parameters(), lr = lr)
+            
+        def forward(self, x, hid_cell_state = None):
+            x_dec = super(Actor, self).forward(x)
+
+            x_mid = self.fc_mid1(x_dec)
+            x_mid = F.relu(x_mid)
+            x_mid = self.fc_mid2(x_mid)
+            x_mid = x_mid + x_dec
+            x_mid = F.relu(x_mid)
+
+            hx, cx = None,None
+            if self.recurrent:
+                x, cx = self.lstm(x_mid, hid_cell_state)
+                hx = x
+                hx, cx = hx.clone(), cx.clone()
+                #x = self.nonlin(x)
+            else:
+                x = self.nonlin(self.fc_mid(x_mid))
+            #x_act = F.softmax(self.fc_out(x))
+            #x_act = self.fc_out(x)
+            x_act = self.act_mid(x)
+            x_act = self.act_out(x_act)
+
+            x_val = self.value_mid(x)
+            x_val = self.value_out(x)
+            if self.blocking:
+                x_block = self.nonlin(self.fc_block_mid(x))
+                #x_block = self.fc_block_out(x_block) #softmax removed since incuded in loss f
+                x_block = F.sigmoid(self.fc_block_out(x_block)) #softmax removed since incuded in loss f
+            else:
+                x_block = None
+            return (x_act, hx, cx, x_block, x_val)
+
+        def take_action(self, obs, greedy = False, hid_cell_state = None, valid_act = None):
+            (a_probs, hx, cx, x_block, x_val) = self.forward(obs, hid_cell_state)
+            
+            if greedy:
+                a_select = torch.argmax(F.softmax(a_probs), dim=-1, keepdim= True)
+            else:
+                a_probs_new = F.softmax(a_probs.clone().detach())
+                a_probs_new = torch.clamp(a_probs_new, 1e-15, 1.0)
+                if not valid_act is None:
+                    assert a_probs.size(0) == 1
+                    non_valid = set([i for i in range(a_probs.size(-1))]) - set(valid_act)
+                    if len(non_valid) != 0:
+                        idx = torch.tensor(list(non_valid))
+                        a_probs_new[0,idx] = 0
+                if a_probs_new.sum() == 0:
+                    print("a_prob_new is zero")
+                    a_probs_new = F.softmax(a_probs.clone())
+                a_select = torch.multinomial(a_probs_new, 1)
+            return a_probs, a_select, (hx, cx), x_block, x_val
+    return Actor
 
 
 

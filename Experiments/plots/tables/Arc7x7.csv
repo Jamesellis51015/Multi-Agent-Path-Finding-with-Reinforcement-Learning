@@ -1,8 +1,0 @@
-Architecture,total_steps,total_agent_collisions,total_obstacle_collisions
-mlp,66.6$\pm$8.4,5.57$\pm$3.5,21.08$\pm$8.3
-CNN 2,61.9$\pm$10.2,3.89$\pm$2.8,15.43$\pm$7.3
-CNN 3,71.32$\pm$4.7,11.47$\pm$4.7,22.99$\pm$6.6
-CNN 4,71.85$\pm$4.7,11.53$\pm$6.7,21.87$\pm$7.3
-CNN 5,70.12$\pm$6.9,10.27$\pm$6.4,23.19$\pm$8.7
-CNN 7,58.98$\pm$10.4,2.4$\pm$1.7,10.28$\pm$4.0
-

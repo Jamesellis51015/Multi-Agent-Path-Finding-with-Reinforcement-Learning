@@ -27,6 +27,12 @@ def worker(remote, parent_remote, env_fn_wrapper):
         elif cmd == 'render':
             r = env.render()
             remote.send(r)
+        elif cmd == 'render_human':
+            r = env.render('human')
+            remote.send(r)
+        elif cmd == 'return_valid_act':
+            r = {k:env.graph.get_valid_actions(k) for k in env.agents.keys()}
+            remote.send(r)
         # elif cmd == 'reset_task':
         #     ob = env.reset_task()
         #     remote.send(ob)
@@ -44,6 +50,8 @@ def worker(remote, parent_remote, env_fn_wrapper):
         #                      env.agents])
         #     else:
         #         remote.send(['agent' for _ in env.agents])
+        elif cmd == "return_env":
+            remote.send([env])
         else:
             raise NotImplementedError
 
@@ -105,6 +113,14 @@ class SubprocVecEnv(VecEnv):
         for i,remote in enumerate(self.remotes):
             if i in indices: remote.send(('render', None))
         return [remote.recv() for i,remote in enumerate(self.remotes) if i in indices]
+    
+    # def render_human(self, indices = [0]):
+    #     if indices==None:
+    #         indices = [i for i in range(len(self.remotes))]
+        
+    #     for i,remote in enumerate(self.remotes):
+    #         if i in indices: remote.send(('render_human', None))
+    #     return [remote.recv() for i,remote in enumerate(self.remotes) if i in indices]
 
     def close(self):
         if self.closed:
@@ -123,6 +139,18 @@ class SubprocVecEnv(VecEnv):
         for r in self.remotes:
             r.send(("n_agents", None))
         return [r.recv() for r in self.remotes]
+    
+    def return_env(self):
+        for r in self.remotes:
+            r.send(("return_env", None))
+        return [r.recv() for r in self.remotes]
+    
+    def return_valid_act(self):
+        for r in self.remotes:
+            r.send(("return_valid_act", None))
+        return [r.recv() for r in self.remotes]
+
+
 
 
 
@@ -164,6 +192,16 @@ class DummyVecEnv(VecEnv):
     def render(self, indices = None):
         results = [env.render() for env in self.envs]
         return results #np.array(results)
+
+    def return_env(self):
+        # for r in self.remotes:
+        #     r.send(("return_env", None))
+        return self.envs #[r.recv() for r in self.remotes]
+
+    def return_valid_act(self):
+        #for r in self.remotes:
+        #    r.send(("return_valid_act", None))
+        return [{k:self.envs[0].graph.get_valid_actions(k) for k in self.envs[0].agents.keys()}]
         
     @property
     def n_agents(self):

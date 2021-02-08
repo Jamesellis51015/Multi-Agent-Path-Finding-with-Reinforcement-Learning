@@ -1,4 +1,13 @@
-'''Code modified from: https://github.com/IC3Net/IC3Net/blob/master/comm.py '''
+
+
+
+
+'''
+
+Code modified from: https://github.com/IC3Net/IC3Net/blob/master/comm.py 
+
+
+'''
 from collections import namedtuple
 import numpy as np
 import torch as torch
@@ -35,10 +44,6 @@ def multinomials_log_densities(actions, log_probs):
     return log_prob
 
 class IC3Net(nn.Module):
-    """
-    MLP based CommNet. Uses communication vector to communicate info
-    between agents
-    """
     def __init__(self, args, observation_space, action_space):
         ''' num_inputs is observation '''
         super(IC3Net, self).__init__()
@@ -198,7 +203,6 @@ class IC3Net(nn.Module):
         if self.args.hard_attn:
             comm_action = torch.tensor(info['comm_action']).to(config.device)
             comm_action_mask = comm_action.expand(batch_size, n, n).unsqueeze(-1)
-            # action 1 is talk, 0 is silent i.e. act as dead for comm purposes.
             
             agent_mask *= comm_action_mask.double()
 

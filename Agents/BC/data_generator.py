@@ -48,19 +48,23 @@ def generate(env, episodes, n_agents):
         mstar_actions = None
         while mstar_actions is None:
             obs = env.reset()
-           # env.render('human')
+            #env.render('human')
             start_pos = make_start_postion_list(env)
             end_pos = make_end_postion_list(env)
-            mstar_actions = env.graph.mstar_search3(start_pos, end_pos)
+            #mstar_actions = env.graph.mstar_search3(start_pos, end_pos)
+
+            inflation = 1.2
+            mstar_actions =  env.graph.mstar_search4_OD(start_pos, end_pos, inflation)
             if mstar_actions is None:
                 print("No M-star solution found for env generated")
         for a in mstar_actions:
            #assert continue_flag == False
             ep_observations.append(obs)
+            #print("Observation: {}".format(obs[0][-1]))
             for i in range(n_agents):
                 data.append((obs[i], a[i]))
             obs, r, dones, info = env.step(a)
-           # env.render(mode = 'human')
+            #env.render(mode = 'human')
             ep_actions.append(a)
             if info["terminate"]:
                 if info["all_agents_on_goal"] == 1:
@@ -125,7 +129,7 @@ def generate_data(name = "independent_navigation-v0", custom_args = None):
     parser.add_argument("--n_episodes", default= -1, type=int)
     parser.add_argument("--folder_name", default= "none", type=str)
     parser.add_argument("--data_name", default= "none", type=str)
-    parser.add_argument("--base_path", default= "Notnone", type=str)
+    parser.add_argument("--base_path", default= "none", type=str)
 
     if custom_args is None:
         args = parser.parse_args()

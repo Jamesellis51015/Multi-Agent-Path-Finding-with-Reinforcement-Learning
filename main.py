@@ -28,11 +28,12 @@ def main(args):
     parser.add_argument("--obstacle_collision_r", default = -10, type=float)
     parser.add_argument("--goal_reached_r", default = -10, type=float)
     parser.add_argument("--finish_episode_r", default = -10, type=float)
+    parser.add_argument("--block_r", default = -10, type=float)
     parser.add_argument("--custom_env_ind", default= -1, type=int)
 
 
     #Policy:
-    parser.add_argument("--policy", default="TEST2", type =str)
+    parser.add_argument("--policy", default="TEST", type =str)
 
 
 
@@ -73,6 +74,7 @@ def main(args):
     parser.add_argument("--ppo_gae_lambda", default=1.0, type=float)
     parser.add_argument("--ppo_use_gpu", default= False, action='store_true') #ppo_curr_n_updates
     parser.add_argument("--ppo_curr_n_updates", default = 5, type=int)
+    parser.add_argument("--ppo_bc_iteration_prob", default = 0.0, type=float)
     parser.add_argument("--ppo_continue_from_checkpoint", default = False, action='store_true')
 
     ################################################################################################
@@ -163,7 +165,7 @@ def main(args):
     parser.add_argument("--print_frequency", default = int(5e1), type=int)
     parser.add_argument("--replace_checkpoints", default = True, type=bool)
     parser.add_argument("--render_rate", default= int(5e2 - 10), type=int)
-    parser.add_argument("--render_length", default = 15, type= int, help="Number of episodes of rendering to save")
+    parser.add_argument("--render_length", default = 7, type= int, help="Number of episodes of rendering to save")
     #parser.add_argument("--note", default = "NO NOTES", type= str, help="Add note to describe experiment")
     parser.add_argument("--name", default="NO_NAME", type=str, help="Experiment name")
     parser.add_argument("--alternative_plot_dir", default="none", help = "Creates a single folder to store tensorboard plots for comparison")
@@ -234,10 +236,6 @@ def main(args):
         run(args)
     else:
         raise Exception("Policy type not implemented")
-
-
-
-
 
 if __name__ == "__main__":
     main(sys.argv[1:])

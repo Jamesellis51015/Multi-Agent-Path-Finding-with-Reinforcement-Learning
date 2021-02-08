@@ -242,6 +242,7 @@ class Independent_NavigationV0(Grid_Env):
         agent_collision = -0.4
         goal_reached= 0.3 #0.01
         finish_episode = 2.0
+        block = -1.0
 
 
     class Global_Cooperative_Rewards():
@@ -251,6 +252,7 @@ class Independent_NavigationV0(Grid_Env):
         agent_collision = -0.4
         goal_reached= 0.0
         finish_episode = 1
+        block = -1.0
 
     def __init__(self, args):
         #Make default env arguments if not exist in args
@@ -273,7 +275,10 @@ class Independent_NavigationV0(Grid_Env):
         for key, val in self.goals.items():
             val.goal_id = key
 
+        self.heur_block = args.ppo_heur_block
+        #self.heur_valid_act = args.ppo_heur_valid_act
         self.graph = Heuristics(self.grid, self)
+        
         
         self.clear_paths()
         #print("Not checking if path exists")
@@ -291,6 +296,8 @@ class Independent_NavigationV0(Grid_Env):
                 self.rewards.goal_reached = self.args.goal_reached_r
             if self.args.finish_episode_r != -10:
                 self.rewards.finish_episode = self.args.finish_episode_r
+            if self.args.block_r != -10:
+                self.rewards.block = self.args.block_r
         
         # if args.use_custom_rewards == True:
         #     self.rewards.step = args.reward_step
@@ -309,11 +316,21 @@ class Independent_NavigationV0(Grid_Env):
 
         observation_space = self.init_observation_space()
         self.observation_space = [copy.deepcopy(observation_space) for _ in self.agents]
+        self.blocking_hldr = {i:None for i in self.agents.keys()}
 
     def reset(self, env_ind = None):
         self.__init__(self.args)
         (obs, rewards, dones, info) = self.step({h:0 for h in self.agents.keys()})
         return obs
+    
+    def step(self, action_dict):
+        (obs, rewards, dones, info) = super().step(action_dict)
+        if self.heur_block:
+            info["blocking"] = copy.deepcopy(self.blocking_hldr)
+        else:
+            info["blocking"] = None
+
+        return (obs, rewards, dones, info)
 
     def clear_paths(self):
         all_goal_ids = [g.goal_id for g in self.goals.values()]
@@ -352,7 +369,16 @@ class Independent_NavigationV0(Grid_Env):
         if collisions['agent_col']:
             for key, val in collisions['agent_col'].items():
                 if val: rewards[key] += self.rewards.agent_collision
+        
+        #For blocking:
+        if self.heur_block:
+            for key in self.agents.keys():
+                block = self.graph.is_blocking(key)
+                self.blocking_hldr[key] = block
+                if block:
+                    rewards[key] += self.rewards.block
         return isdone, rewards
+
         #return overall_dones, rewards
     
     def get_global_cooperative_rewards(self, collisions):
@@ -361,7 +387,150 @@ class Independent_NavigationV0(Grid_Env):
        
 
 
+
+
+
 class Independent_NavigationV1(Grid_Env):
+    class Rewards():
+        step= -0.01
+        object_collision = -0.015#-0.1
+        agent_collision = -0.4
+        goal_reached= 0.1#0.01
+        finish_episode = 1
+        blocking = -0.8
+
+    class Global_Cooperative_Rewards():
+        """All agents share this reward """
+        step= -0.01
+        object_collision = -0.2
+        agent_collision = -0.4
+        goal_reached= 0.0
+        finish_episode = 1
+
+    def __init__(self, args):
+        #Make default env arguments if not exist in args
+        #initialize base Grid_Env
+        self.description = "Agents have to reach their own goal whilst \
+            avoiding collisions with other agents"
+        self.args =  args
+        generator = random_obstacle_generator(args.map_shape, args.n_agents, obj_density = args.obj_density)
+        super().__init__(generator, diagonal_actions = False, fully_obs = False, view_d = args.view_d, agent_collisions = True)
+        
+        self.heur_block = args.ppo_heur_block
+        self.heur_valid_act = args.ppo_heur_valid_act
+        #self.heur_no_prev_state = args.ppo_heur_no_prev_state
+        
+        self.rewards = self.Rewards()
+        #Goals:
+        assert len(self.goals) == len(self.agents)
+        # goal_ids = np.random.choice(len(self.goals), len(self.goals), replace = False) #agents assigned to goals
+        # for i,g in enumerate(self.goals):
+        #     g.goal_id = goal_ids[i]
+        for key, val in self.agents.items():
+            val.id = key
+
+        self.goals = {i : g for i,g in enumerate(self.goals)}
+        for key, val in self.goals.items():
+            val.goal_id = key
+
+        self.heur = Heuristics(self.grid, self)
+        self.clear_paths()
+        #Set reward function, obsevation space etc
+        self.rewards = self.Rewards()
+        
+        # if args.use_custom_rewards == True:
+        #     self.rewards.step = args.reward_step
+        #     self.rewards.object_collision = args.reward_obj_collision
+        #     self.rewards.agent_collision = args.reward_agent_collision
+        #     self.rewards.goal_reached = args.reward_goal_reached
+        #     self.rewards.finish_episode = args.reward_finish_episode
+
+        #Observation settings:
+        self.fully_obs = False
+        self.inc_obstacles = True
+        self.inc_other_agents = True
+        self.inc_other_goals = True #If agent does not have specific goal, only include other agent's goals.
+        self.inc_own_goals = True #This is only applicable to Independet Navigation tasks; In CN goals are everyones goals
+        self.inc_direction_vector = True
+
+        observation_space = self.init_observation_space()
+        self.observation_space = [copy.deepcopy(observation_space) for _ in self.agents]
+
+        self.blocking_hldr = {i:None for i in self.agents.keys()}
+
+    def reset(self, env_ind = None):
+        self.__init__(self.args)
+        (obs, rewards, dones, info) = self.step({h:0 for h in self.agents.keys()})
+        return obs
+
+    def clear_paths(self):
+        all_goal_ids = [g.goal_id for g in self.goals.values()]
+        for a in self.agents.values():
+            ind = all_goal_ids.index(a.id)
+            g = self.goals[ind]
+            blocks = self.heur.get_blocking_obs(a.pos, g.pos)
+            for b in blocks:
+                self._remove_object(b, "obstacle")
+            # while(len(blocks) != 0):
+            #     self._remove_object(blocks[0], "obstacle")
+            #     blocks = self.graph.get_blocking_obs(a.pos, g.pos)
+            
+    def step(self, action_dict):
+        (obs, rewards, dones, info) = super().step(action_dict)
+        if self.heur_block:
+            info["blocking"] = copy.deepcopy(self.blocking_hldr)
+        else:
+            info["blocking"] = None
+
+        if self.heur_valid_act:
+            info["valid_act"] = {i:self.heur.get_valid_actions(i) for i in self.agents.keys()}
+        else:
+            info["valid_act"] = None
+        return (obs, rewards, dones, info)
+
+    def get_rewards(self, collisions):
+        rewards = {}
+        isdone = {}
+        overall_dones = {}
+        for handle, agent in self.agents.items():
+            for g in self.goals.values():
+                if g.pos == agent.pos and g.goal_id == agent.id:
+                    rewards[handle] = self.rewards.goal_reached
+                    isdone[handle] = True
+                    break
+                else:
+                    rewards[handle] = self.rewards.step
+                    isdone[handle] = False
+        # if sum(isdone.values()) == len(self.agents):
+        #     for handle in self.agents.keys(): 
+        #         rewards[handle] = self.rewards.finish_episode
+        #         overall_dones[handle] = True
+        # else:
+        #     for i, agnt in self.agents.items():
+        #         overall_dones[i] = False
+
+        if collisions['obs_col']:
+            for key, val in collisions['obs_col'].items():
+                if val: rewards[key] += self.rewards.object_collision
+        if collisions['agent_col']:
+            for key, val in collisions['agent_col'].items():
+                if val: rewards[key] += self.rewards.agent_collision
+        if self.heur_block:
+            for key in self.agents.keys():
+                block = self.heur.is_blocking(key)
+                self.blocking_hldr[key] = block
+                if block:
+                    rewards[key] += self.rewards.blocking
+        return isdone, rewards
+    
+    def get_global_cooperative_rewards(self, collisions):
+        r = {i:0 for i, a in self.agents.items()}
+        return r
+
+
+
+
+class Independent_NavigationV1_old(Grid_Env):
     class Rewards():
         step= -0.01
         object_collision = -0.015#-0.1

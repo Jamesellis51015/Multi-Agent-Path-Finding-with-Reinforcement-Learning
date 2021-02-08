@@ -170,6 +170,7 @@ class AttentionSAC(object):
         if self.share_actor:
             all_pol_loss = [ sum(all_pol_loss) / len(all_pol_loss) ]
         
+        #NB: Note that all_pol_loss is now a list of len = 1
         for pol_loss in all_pol_loss:
             # don't want critic to accumulate gradients from policy loss
             disable_gradients(self.critic)

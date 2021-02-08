@@ -107,6 +107,8 @@ def make_base_policy(policy_type, double_obs_space = False):
             base_policy = Mlp_Base2
         elif policy_type == "primal7":
             base_policy = PRIMAL_Base7
+        elif policy_type == "primal9":
+            base_policy = PRIMAL_Base9
         else:
             raise Exception("Base policy type not implemented")
         return base_policy
@@ -133,6 +135,8 @@ def make_base_policy(policy_type, double_obs_space = False):
             base_policy = PRIMAL_Base6
         elif policy_type == "primal7":
             base_policy = PRIMAL_Base7
+        elif policy_type == "primal9":
+            base_policy = PRIMAL_Base9
         else:
             raise Exception("Base policy type not implemented")
         return base_policy
@@ -642,10 +646,14 @@ class PRIMAL_Base7(nn.Module): #For env size  = 7
 
         self.flat_cnn_out_size = self.hidden_dim
 
+        self.cat_end_mid = None
         if cat_end is None:
             self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
         else:
+            #self.cat_end_mid = nn.Linear(cat_end)
             self.fc1 = nn.Linear(self.flat_cnn_out_size + cat_end, hidden_dim)
+            # self.cat_end_mid = nn.Linear(cat_end, 36)
+            # self.fc1 = nn.Linear(self.flat_cnn_out_size + 36, hidden_dim)
 
         #self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
     
@@ -679,8 +687,108 @@ class PRIMAL_Base7(nn.Module): #For env size  = 7
         if cat_end is None:
             x = self.fc1(x)
         else:
+            #cat_end = self.cat_end_mid(cat_end)
             x = self.fc1(torch.cat([x,cat_end], dim=1))
 
         #x = self.fc1(x)
         x = F.relu(x)
+        return x
+
+
+
+class PRIMAL_Base9(nn.Module): #For env size  = 9
+    def __init__(self, input_dim, hidden_dim=None, nonlin = None, cat_end = None):
+        self.hidden_dim = hidden_dim
+        self.nonlin = nonlin
+        super().__init__()
+        (channels, d1, d2) =  input_dim
+        k = 3
+        p=1
+        self.c1 = nn.Conv2d(channels, 128, k, padding=p)
+        d = d1 #assume square image
+        d = (d+2*p - (k-1) - 1)/1 + 1
+        self.c2 = nn.Conv2d(128, 128, k, padding=p)
+        self.c3 = nn.Conv2d(128, 128, k, padding=p)
+        self.mp1 = nn.MaxPool2d(2,2, ceil_mode=True)
+        self.c4 = nn.Conv2d(128, 256, k, padding=p)
+        self.c5 = nn.Conv2d(256, 256, k, padding=p)
+        self.c6 = nn.Conv2d(256, 256, k, padding=p)
+        self.mp2 = nn.MaxPool2d(2,2)
+        # self.mp1 = nn.MaxPool2d(3,1)
+        # d = (d-(2-1) - 1)/2 + 1
+        # self.c4 = nn.Conv2d(128, 256, k, padding=p)
+        # self.c5 = nn.Conv2d(256, 256, k, padding=p)
+        # self.c6 = nn.Conv2d(256, 128, k, padding=p)
+        # self.mp2 = nn.MaxPool2d(3,2)
+
+        if cat_end is not None:
+            self.c7 = nn.Conv2d(256, self.hidden_dim - 12, 2)
+        else:
+            self.c7 = nn.Conv2d(256, self.hidden_dim, 2)
+
+        self.flat_cnn_out_size = self.hidden_dim
+
+        self.cat_end_mid = None
+        if cat_end is None:
+            pass
+            #self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
+        else:
+            #self.flat_cnn_out_size - 12
+            #self.cat_end_mid = nn.Linear(cat_end)
+            #self.fc1 = nn.Linear(self.flat_cnn_out_size + cat_end, hidden_dim)
+            self.cat_end_mid = nn.Linear(cat_end, 12)
+            #self.fc1 = nn.Linear(self.flat_cnn_out_size + 12, hidden_dim)
+
+        #self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
+    
+    def forward(self, x, cat_end = None):
+        if type(x) == tuple:
+            (x, cat_end) = x
+        batch_size = x.size(0)
+        #x = self.model(x)
+
+        x = self.c1(x)
+        x = F.relu(x)
+        x = self.c2(x)
+        x = F.relu(x)
+        x = self.c3(x)
+        x = self.mp1(x)
+        x = F.relu(x)
+        x = self.c4(x)
+        x = F.relu(x)
+        x = self.c5(x)
+        x = F.relu(x)
+        x = self.c6(x)
+        x = F.relu(x)
+        x = self.mp2(x)
+        x = self.c7(x)
+        x = F.relu(x.reshape(batch_size, -1))
+
+
+
+        #x = self.c8(x)
+        #x = F.relu(x)
+        # x = self.mp1(x)
+        # x = self.c4(x)
+        # x = F.relu(x)
+        # x = self.c5(x)
+        # x = F.relu(x)
+        # x = self.c6(x)
+        # x = F.relu(x)
+        # x = self.mp2(x)
+        #x = self.c7(x)
+        #x = F.relu(x)
+
+        #x = x.reshape((batch_size,-1))
+
+        if cat_end is None:
+            #x = self.fc1(x)
+            pass
+        else:
+            cat_end = F.relu(self.cat_end_mid(cat_end))
+            x = torch.cat([x,cat_end], dim=1)
+
+        #x = self.fc1(x)
+        #x = F.relu(x)
+
         return x
