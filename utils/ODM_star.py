@@ -106,7 +106,6 @@ class AllVertex():
             return self.all_v[v_id]
     
 
-
 class Mstar_OD():
     def __init__(self, start, end, expand_position, get_next_joint_policy_position, get_shortest_path_cost, inflation = 1.0):
         '''
@@ -176,7 +175,6 @@ class Mstar_OD():
         return None
 
     def _backprop(self, v_k, c_l, open):
-        #NB check that not intermediate node
         if v_k.is_standard:
             if not c_l.issubset(v_k.collision_set):
                 v_k.add_collision(c_l)
@@ -188,7 +186,6 @@ class Mstar_OD():
 
 
     def heuristic_SIC(self, v_id):
-        #Need to check which positions has been assigned and which not for intermediate nodes
         (inter_tup, vertex_pos_tup) = v_id
         total_cost = 0
         for i, pos in enumerate(inter_tup):
@@ -302,9 +299,6 @@ class Mstar_OD():
 
             if len(valid_n_pos) == 0:
                 return []
-                #If no valid positions, produce coliding vertex
-                #valid_n_pos = [vertex_pos_tup[this_inter_level]]
-
             for p in valid_n_pos:
                 next_inter_tup[this_inter_level] = p 
                 all_next_inter_tup.append(tuple(next_inter_tup))
@@ -351,8 +345,6 @@ class Mstar_OD():
         return next_v_id
             
             
-
-
     def _back_track(self, goal_v):
         '''Returns a dictionary of actions for the optimal path '''
         self.pos_act = {(0,1):2,

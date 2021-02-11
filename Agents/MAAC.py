@@ -1,61 +1,35 @@
+
+'''Modified from https://github.com/shariqiqbal2810/MAAC '''
 import argparse
 import torch
 import os
 import numpy as np
 from gym.spaces import Box, Discrete
 from pathlib import Path
-#from torch.autograd import Variable
 from tensorboardX import SummaryWriter
-#from utils.make_env import make_env
 from Env.make_env import make_env
 from Agents.maac_utils.buffer import ReplayBuffer
 from Agents.maac_utils.env_wrappers import SubprocVecEnv, DummyVecEnv
 from Agents.maac_utils.attention_sac import AttentionSAC
 import time
-
 from utils.wrappers import flat_np_lst, lst_to_dict, flat_np_lst_env_stack, wrap_actions
-
 
 def make_parallel_env(args, n_rollout_threads, seed):
     def get_env_fn(rank):
         def init_env():
             env = make_env(args)
-            #Make env obs space flat:
-            # obs_shape = env.observation_space[0].shape
-            # flat_dim = obs_shape[0]*obs_shape[1]*obs_shape[2]
-            # env.observation_space = [Box(low=0, high=1, shape= (flat_dim,), dtype=int) \
-            #                         for _ in env.agents]
-            #obs_space = env.observation_space
-            #env.observation_space = [obs_space for _ in env.agents]
-           # env.seed(seed + rank * 1000)
             np.random.seed(seed + rank * 1000)
             return env
         return init_env
     if n_rollout_threads == 1:
         return DummyVecEnv([get_env_fn(0)])
     else:
-        #return DummyVecEnv([get_env_fn(0), get_env_fn(2)])
         return SubprocVecEnv([get_env_fn(i) for i in range(n_rollout_threads)])
 
 def run(config, logger0):
-   # model_dir = Path('./models') / config.env_id / config.model_name
-   # if not model_dir.exists():
-   #     run_num = 1
-    # else:
-    #     exst_run_nums = [int(str(folder.name).split('run')[1]) for folder in
-    #                      model_dir.iterdir() if
-    #                      str(folder.name).startswith('run')]
-    #     if len(exst_run_nums) == 0:
-    #         run_num = 1
-    #     else:
-    #         run_num = max(exst_run_nums) + 1
-    # curr_run = 'run%i' % run_num
-    # run_dir = model_dir / curr_run
-    # log_dir = run_dir / 'logs'
-    # os.makedirs(log_dir)
     config.maac_n_rollout_threads = 1
     start_time = time.time()
-    logger = None #logger0.writer
+    logger = None 
     run_num = 1
     torch.manual_seed(run_num)
     np.random.seed(run_num)
@@ -91,19 +65,12 @@ def run(config, logger0):
         print("Episodes %i-%i of %i ETA %f" % (ep_i + 1,
                                         ep_i + 1 + config.maac_n_rollout_threads,
                                         config.maac_n_episodes, ETA))
-        #obs = np.stack([flat_np_lst(i) for i in env.reset()])
         obs = flat_np_lst_env_stack(env.reset(), flat=False) #*
         model.prep_rollouts(device='cpu')
 
         all_infos = []
 
         for et_i in range(episode_length):
-            # rearrange observations to be per agent, and convert to torch Variable
-            # hldr1 = obs[:, 1]
-            # hldr = np.vstack(obs[:, 1])
-            # torch_obs = [torch.tensor(np.vstack(obs[:, i]),
-            #                       requires_grad=False)
-            #              for i in range(model.nagents)]
             torch_obs = [torch.tensor(obs[:, i],
                                   requires_grad=False)
                          for i in range(model.nagents)]
@@ -163,17 +130,9 @@ def run(config, logger0):
         else:
           logger0.log_ep_info(all_infos, [], ep_i)
 
-
-        # ep_rews = replay_buffer.get_average_rewards(
-        #     episode_length * config.maac_n_rollout_threads)
-        # for a_i, a_ep_rew in enumerate(ep_rews):
-        #     logger.add_scalar('agent%i/mean_episode_rewards' % a_i, a_ep_rew, ep_i)
-
         if ep_i % config.checkpoint_frequency < config.maac_n_rollout_threads:
             model.prep_rollouts(device='cpu')
-            #os.makedirs(run_dir / 'incremental', exist_ok=True)
             model.save(logger0.checkpoint_dir + '/checkpoint_' + str(ep_i //config.checkpoint_frequency) + '.pt')
-          #  model.save(logger0.checkpoint_dir + '/model.pt')
 
         if ep_i % config.benchmark_frequency < config.maac_n_rollout_threads and ep_i != 0:
             benchmark(config, logger0, model, config.benchmark_num_episodes, config.benchmark_render_length, ep_i)
@@ -184,7 +143,6 @@ def run(config, logger0):
 
 def benchmark(config, logger, policy, num_episodes, render_length, curr_episode):
     env = make_parallel_env(config, 1, np.random.randint(0, 10000))#seed=num_episodes//100)
-    
     hldr = make_env(config)
     max_steps = hldr.max_step
 

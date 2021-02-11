@@ -1,11 +1,8 @@
 '''Some code modified from: https://github.com/IC3Net/IC3Net/blob/master/comm.py '''
-
-
-
 import argparse
 from Env.make_env import make_env
 from Agents.make_policy import make_policy 
-from trainer import Trainer
+from ic3Net_trainer import Trainer
 from utils.logger import Logger
 import config
 import sys
@@ -21,7 +18,6 @@ def main(args):
     parser.add_argument("--obj_density", default = 0.0, type=float)
     parser.add_argument("--view_d", default = 2, type=int)
     parser.add_argument("--env_name", default = "cooperative_navigation-v0", type = str)
-
     parser.add_argument("--use_custom_rewards", default = False, action='store_true')
     parser.add_argument("--step_r", default = -10, type=float)
     parser.add_argument("--agent_collision_r", default = -10, type=float)
@@ -31,26 +27,9 @@ def main(args):
     parser.add_argument("--block_r", default = -10, type=float)
     parser.add_argument("--custom_env_ind", default= -1, type=int)
 
-
     #Policy:
     parser.add_argument("--policy", default="TEST", type =str)
 
-
-
-    ################################################################################################
-    #           A2C Paramares:
-    parser.add_argument("--a2c_hidden_dim", default= 120, type=int)
-    parser.add_argument("--a2c_base_policy_type", default= "mlp", type=str)
-    parser.add_argument("--a2c_batch_size", default= 500, type=int)
-    parser.add_argument("--a2c_share_actor", default= False,action='store_true')
-    parser.add_argument("--a2c_share_critic", default= False,action='store_true')
-    parser.add_argument("--a2c_iterations", default= 7000, type=int)
-    parser.add_argument("--a2c_entropy_coeff", default = 0.01, type=float)
-    parser.add_argument("--a2c_value_coeff", default= 0.5, type=float)
-    parser.add_argument("--a2c_discount", default= 0.99, type=float)
-    parser.add_argument("--a2c_use_gpu", default= False, action='store_true')
-
-    ################################################################################################
     #           PPO Paramares:
     parser.add_argument("--ppo_hidden_dim", default= 120, type=int)
     parser.add_argument("--ppo_lr_a", default= 0.001, type=float)
@@ -92,7 +71,7 @@ def main(args):
     parser.add_argument("--hard_attn", default=True,action='store_false', help="to communicate or not. If hard_attn == False, no comm")
     parser.add_argument("--comm_mask_zero", default=False,action='store_true', help="to communicate or not. If hard_attn == False, no comm")
     parser.add_argument('--comm_action_one', default=False, action='store_true',
-                    help='Whether to always talk, sanity check for hard attention.')
+                    help='Always communicate.')
     parser.add_argument("--ic3_base_policy_type", default= "mlp", type =str)
 
     ################################################################################################
@@ -118,8 +97,6 @@ def main(args):
     parser.add_argument("--maac_use_gpu", action='store_true')
     parser.add_argument("--maac_share_actor", action='store_true')
     parser.add_argument("--maac_base_policy_type", default = 'cnn_old') #Types: mlp, cnn_old, cnn_new
-
-
 
     #Training:
     parser.add_argument("--n_workers", default = 1, type=int,
@@ -147,8 +124,6 @@ def main(args):
      #   help='number of training epochs')
     #parser.add_argument('--epoch_size', type=int, default=10,
      #                   help='number of update iterations in an epoch')
-
-    
     parser.add_argument('--batch_size', type=int, default=2000,
                         help='number of steps before each update (per thread)')
     #End here...
@@ -185,8 +160,6 @@ def main(args):
     args.map_shape = (args.map_shape, args.map_shape)
 
     config.set_global_seed(args.seed)
-
-    
     env = make_env(args)
 
     print("Running: \n {}".format(env.summary()))
@@ -226,13 +199,14 @@ def main(args):
         logger = Maac_Logger(args)
         run(args, logger)
     elif args.policy == 'A2C':
-        from Agents.Ind_A2C import run_a2c
-        run_a2c(args)
+        raise NotImplementedError 
+        # from Agents.Ind_A2C import run_a2c
+        #run_a2c(args)
     elif args.policy == 'PPO':
-        from Agents.Ind_PPO import run
+        from Agents.PPO import run
         run(args)
     elif args.policy == 'CURR_PPO':
-        from Agents.Ind_PPO_Curr import run
+        from Agents.PPO_CurriculumTrain import run
         run(args)
     else:
         raise Exception("Policy type not implemented")

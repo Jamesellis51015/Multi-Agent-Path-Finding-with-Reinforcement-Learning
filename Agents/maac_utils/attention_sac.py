@@ -1,3 +1,9 @@
+
+'''
+**********************************************************
+This class is from https://github.com/shariqiqbal2810/MAAC 
+**********************************************************
+'''
 import torch
 import torch.nn.functional as F
 from torch.optim import Adam

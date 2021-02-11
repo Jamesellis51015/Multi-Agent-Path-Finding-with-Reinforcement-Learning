@@ -1,14 +1,11 @@
 """Handles sampling from the environment. """
 import numpy as np
-import ray
+#import ray
 from collections import namedtuple
 import copy
-
 import torch
-
 from Env.make_env import make_env
 
-#ray.init(ignore_reinit_error=True)
 
 Transition = namedtuple('Transition', ('state', 'action_taken', 'action_prob', 'value', 'episode_mask', 'episode_mini_mask', 'next_state',
                                        'reward', 'misc'))
@@ -110,9 +107,6 @@ class Trainer():
         logger.benchmark_info(all_infos, render_frames, curr_episode, parallel_env = False)
            
 
-
-
-
     def get_episode_ic3net(self, render):
         info = {}
         info['alive_mask'] = np.ones(self.args.n_agents) #For now agents are always alive
@@ -130,7 +124,7 @@ class Trainer():
             if t == 0 and self.args.hard_attn:
                 info['comm_action'] = np.zeros(self.args.n_agents, dtype=int)
 
-            # recurrence over time
+            # recurrence
             if self.args.recurrent:
              #   prev_hid = self.policy.init_hidden(batch_size=1) #Assume batch size always one since this doing one step at a time
                 x = [obs, prev_hid]
@@ -178,10 +172,6 @@ class Trainer():
                 return batch, render_frames
         return batch, render_frames
 
-
-
-
-    
     def get_episode(self, render):
         normal_policies = ['PG_Shared', 'AC_Shared', 'PG_Separate', 'AC_Separate']
 
@@ -191,8 +181,6 @@ class Trainer():
             return self.get_episode_ic3net(render)
         else:
             raise Exception ("No get_episode training loop defined for {} policy".format(self.args.policy))
-        
-        
         
     def sample_batch(self, render = 0):
         self.batch = []
@@ -238,9 +226,6 @@ class Trainer():
                         self.render_frames.append(frame)
             stats["num_timesteps"] = len(self.batch)
             self.batch = Transition(*zip(*self.batch))
-                
-        
-        #print(len(self.batch))
 
         return self.batch, stats, self.render_frames
 
@@ -273,83 +258,6 @@ class Trainer():
 
             return batch, render_frames
 
-
-            
-
-
-@ray.remote
-class env_inst():
-    def __init__(self, args):
-        self.env = make_env(args)
-        self.global_T =0 
-        self.this_state = None
-       # self.r_log_hldr = []
-       # self.r_log = []
-
-    def rollout(self,policy, render, T = "inf"):
-        batch = []
-        render_frames = []
-        (obs, reward, dones, collisions, info) = self.env.reset()
-        if render > 0: render_frames.append(self.env.render('rgb_array'))
-        terminate = False
-        if T=="inf":
-            T = self.env.max_step
-        
-        for t in range(T):
-            actions, action_prob, value = policy.take_action(obs)
-            (obs_next, reward, dones, collisions, info) = self.env.step(actions)
-            if render > 0: render_frames.append(self.env.render('rgb_array'))
-
-            if info["terminate"] or (t+1) == T:
-                terminate = True
-                episode_mask = 0 
-            else:
-                episode_mask = 1 
-            
-            episode_mini_mask = dones #TODO:Implement episode mini_mask in policy update
-                
-            batch.append(Transition(obs, actions, action_prob, value, episode_mask, episode_mini_mask, obs_next, reward, info))
-
-            if terminate:
-                return batch, render_frames
-        return (batch, render_frames)
-        
-        # #np.random.seed(1)
-        # for i in range(t):
-        #     if self.global_T == 0:
-        #         self.env.seed(sdr.get())
-        #         self.this_state = torch.tensor([self.env.reset()], dtype=torch.float)
-                
-                
-
-        #     _, a_prob = policy.forward(self.this_state)
-        #     a = policy.get_action(a_prob).squeeze().item()
-
-        #     #a = np.random.choice([0,1])
-
-        #     s_next,r,ter,_ = self.env.step(a)
-        #     s_next = torch.tensor([s_next], dtype=torch.float)
-        #     self.r_log_hldr.append(r)
-        #     trans.append(sar(self.this_state, a, r, s_next,a_prob.squeeze()[a].item(), ter))
-
-        #     self.global_T += 1
-        #     self.this_state = s_next
-
-        #     if ter:
-        #         self.global_T = 0
-        #         self.r_log = self.r_log_hldr[:]
-        #         self.r_log_hldr = []
-        #         return trans
-
-        
-    # def get_ep_r(self):
-    #     if len(self.r_log) != 0:
-    #         hldr =  self.r_log[:]
-    #         self.r_log = []
-    #         return hldr
-    #     else:
-    #         return None
-    
 
 
     

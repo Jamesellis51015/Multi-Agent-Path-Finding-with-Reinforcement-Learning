@@ -1,12 +1,5 @@
-
-
-
-
 '''
-
 Code modified from: https://github.com/IC3Net/IC3Net/blob/master/comm.py 
-
-
 '''
 from collections import namedtuple
 import numpy as np
@@ -17,9 +10,7 @@ import torch.optim as optim
 from gym import spaces
 import config
 import copy
-
 from Agents.general_utils.policy import make_base_policy
-
 import math
 Transition = namedtuple('Transition', ('state', 'action_taken', 'action_prob', 'value', 'episode_mask', 'episode_mini_mask', 'next_state',
                                        'reward', 'misc'))
@@ -47,8 +38,6 @@ class IC3Net(nn.Module):
     def __init__(self, args, observation_space, action_space):
         ''' num_inputs is observation '''
         super(IC3Net, self).__init__()
-
-
         self.args = args
         self.nagents = args.n_agents
         self.hid_size = args.hid_size
@@ -56,13 +45,9 @@ class IC3Net(nn.Module):
         self.recurrent = args.recurrent
         self.n_actions = action_space[0].n
         self.base_policy_type = args.ic3_base_policy_type
-
-
         args.naction_heads = [self.n_actions, 2]
-        #self.action_head = nn.Linear(self.hid_size, action_space.n)
         self.heads = nn.ModuleList([nn.Linear(args.hid_size, o).double()
                                         for o in args.naction_heads])
-       # self.comm_action_head = nn.Linear(self.hid_size, 2) #Activation for this? tanh?
 
         self.make_state_encoder(observation_space[0])
 
@@ -71,8 +56,6 @@ class IC3Net(nn.Module):
             #self.hidden_enc = nn.Linear(self.hid_size, self.hid_size)
             self.f_module = nn.LSTMCell(self.hid_size, self.hid_size).double()
         else:
-            # self.f_modules = nn.ModuleList([nn.Linear(args.hid_size, args.hid_size)
-            #                     for _ in range(self.comm_passes)])
             if args.share_weights:
                 self.f_module = nn.Linear(args.hid_size, args.hid_size).double()
                 self.f_modules = nn.ModuleList([self.f_module
@@ -80,10 +63,6 @@ class IC3Net(nn.Module):
             else:
                 self.f_modules = nn.ModuleList([nn.Linear(args.hid_size, args.hid_size).double()
                                                 for _ in range(self.comm_passes)])
-        
-   
-        # self.C_modules = nn.ModuleList([self.C_module
-        #     for _ in range(self.comm_passes)])
         if args.share_weights:
             self.C_module = nn.Linear(args.hid_size, args.hid_size).double()
             self.C_modules = nn.ModuleList([self.C_module
@@ -91,7 +70,6 @@ class IC3Net(nn.Module):
         else:
             self.C_modules = nn.ModuleList([nn.Linear(args.hid_size, args.hid_size).double()
                                             for _ in range(self.comm_passes)])
-        # #Init weights?
 
         self.value_head = nn.Linear(self.hid_size, 1).double()
 
@@ -106,25 +84,14 @@ class IC3Net(nn.Module):
 
         self.to(config.device)
 
-            
-    
+
     
     def make_state_encoder(self, observation_space):
         if type(observation_space) == tuple:
             raise NotImplementedError
         elif isinstance(observation_space, spaces.Box):
-            #(channels, d1, d2) =  observation_space.shape
-            # self.c1 = nn.Conv2d(channels, 3*channels, 2).double()
-            # self.c2 = nn.Conv2d(3*channels, 2*channels, 2).double()
-            # self.fc1 = nn.Linear(2*channels*(d1-2)*(d2-2), 120).double()
-            # self.fc2 = nn.Linear(120, 120).double()
             BasePolicy = make_base_policy(self.base_policy_type)
             self.enc = BasePolicy(observation_space.shape, self.hid_size, nonlin = F.leaky_relu).double()
-            # self.enc_features1 = nn.Sequential(
-            #     nn.Conv2d(channels, 3*channels, 2).double(),
-            #     nn.Conv2d(3*channels, 2*channels, 2).double()
-            # )
-            # self.enc_features2 = nn.Linear(2*channels*(d1-2)*(d2-2), self.hid_size).double()
 
     def forward_state_encoder(self, x):
         '''x = obs, (hidden_state, cell_state) '''
@@ -133,28 +100,18 @@ class IC3Net(nn.Module):
         if self.args.recurrent:
             raise Exception("Recurrent policy not implemented")
             x, extras = x
-            # x = self._process_obs(x)
-            # bat, n, channels,d1,d2 = x.size()
-            # x = x.view(bat*n, channels,d1,d2)
-
-            # x = self.enc_features1(x)
-            # x = self.enc_features2(x.flatten(1))
             hidden_state, cell_state = extras
         else:
             x = self._process_obs(x)
             bat, n, channels,d1,d2 = x.size()
             x = x.view(bat*n, channels,d1,d2)
             x = self.enc.forward(x)
-            # x = self.enc_features1(x)
-            # x = self.enc_features2(x.flatten(1))
-            # x = F.tanh(x)
             hidden_state = x.view(bat,n, -1)
         return x, hidden_state, cell_state
 
 
     def get_agent_mask(self, batch_size, info):
         n = self.nagents
-
         if 'alive_mask' in info:
             agent_mask = torch.from_numpy(info['alive_mask'])
             num_agents_alive = agent_mask.sum()
@@ -169,37 +126,14 @@ class IC3Net(nn.Module):
 
     def forward(self, x, info={}, greedy = False):
         # NB: This function taken from: https://github.com/IC3Net/IC3Net/blob/master/comm.py
-        """Forward function for CommNet class, expects state, previous hidden
-        and communication tensor.
-        B: Batch Size: Normally 1 in case of episode
-        N: number of agents
-
-        Arguments:
-            x {tensor} -- State of the agents (N x num_inputs)
-            prev_hidden_state {tensor} -- Previous hidden state for the networks in
-            case of multiple passes (1 x N x hid_size)
-            comm_in {tensor} -- Communication tensor for the network. (1 x N x N x hid_size)
-
-        Returns:
-            tuple -- Contains
-                next_hidden {tensor}: Next hidden state for network
-                comm_out {tensor}: Next communication tensor
-                action_data: Data needed for taking next action (Discrete values in
-                case of discrete, mean and std in case of continuous)
-                v: value head
-        """
-        
         x, hidden_state, cell_state = self.forward_state_encoder(x)
-        batch_size = 1#x.size()[0]
-        
+        batch_size = 1
         n = self.nagents
-
         x = x.reshape(batch_size, n, self.hid_size)
-
         num_agents_alive, agent_mask = self.get_agent_mask(batch_size, info)
         agent_mask = agent_mask.clone()
         agent_mask = agent_mask.to(config.device)
-        # Hard Attention - action whether an agent communicates or not
+        # Communication action:
         if self.args.hard_attn:
             comm_action = torch.tensor(info['comm_action']).to(config.device)
             comm_action_mask = comm_action.expand(batch_size, n, n).unsqueeze(-1)
@@ -209,13 +143,9 @@ class IC3Net(nn.Module):
         agent_mask_transpose = agent_mask.transpose(1, 2)
 
         for i in range(self.comm_passes):
-            # Choose current or prev depending on recurrent
             comm = hidden_state.view(batch_size, n, self.hid_size) if self.args.recurrent else hidden_state
 
-            # Get the next communication vector based on next hidden state
             comm = comm.unsqueeze(-2).expand(-1, n, n, self.hid_size)
-
-            # Create mask for masking self communication
             mask = self.comm_mask.view(1, n, n).to(config.device)
             mask = mask.expand(comm.shape[0], n, n)
             mask = mask.unsqueeze(-1)
@@ -226,20 +156,14 @@ class IC3Net(nn.Module):
             if hasattr(self.args, 'comm_mode') and self.args.comm_mode == 'avg' \
                 and num_agents_alive > 1:
                 comm = comm / (num_agents_alive - 1)
-
-            # Mask comm_in
-            # Mask communcation from dead agents
             comm = comm * agent_mask
-            # Mask communication to dead agents
             comm = comm * agent_mask_transpose
 
-            # Combine all of C_j for an ith agent which essentially are h_j
             comm_sum = comm.sum(dim=1)
             c = self.C_modules[i](comm_sum)
 
 
             if self.args.recurrent:
-                # skip connection - combine comm. matrix and encoded input for all agents
                 inp = x + c
 
                 inp = inp.view(batch_size * n, self.hid_size)
@@ -249,23 +173,13 @@ class IC3Net(nn.Module):
                 hidden_state = output[0]
                 cell_state = output[1]
 
-            else: # MLP|RNN
-                # Get next hidden state from f node
-                # and Add skip connection from start and sum them
+            else: 
                 hidden_state = sum([x, self.f_modules[i](hidden_state), c])
                 hidden_state = F.tanh(hidden_state)
         
         value_head = self.value_head(hidden_state)
         h = hidden_state.view(batch_size, n, self.hid_size)
 
-        # if self.continuous:
-        #     action_mean = self.action_mean(h)
-        #     action_log_std = self.action_log_std.expand_as(action_mean)
-        #     action_std = torch.exp(action_log_std)
-        #     # will be used later to sample
-        #     action = (action_mean, action_log_std, action_std)
-        # else:
-            # discrete actions
         action_prob = [F.log_softmax(head(h), dim=-1) for head in self.heads]
 
         action = self.select_action(action_prob, greedy)
@@ -281,8 +195,6 @@ class IC3Net(nn.Module):
 
     def _process_obs(self, obs):
         '''Convert [dict] of obs to tensor and returns list [obs_tens, hidden_tens] #No need to modify hid_tens yet '''
-        #bat = [] Assume for now batch == 1
-       # for batch in obs:
         n = []
         for key, val in obs.items():
             n.append(torch.from_numpy(val))
@@ -307,13 +219,8 @@ class IC3Net(nn.Module):
             '''
         r_arr = [list(r.values()) for r in batch.reward]
 
-        # Transition = namedtuple('Transition', ('state', 'action_taken', 'action_prob', 'value', 'episode_mask', 'episode_mini_mask', 'next_state',
-        #                                'reward', 'misc'))
-
         return Transition(batch.state, batch.action_taken, batch.action_prob, batch.value, batch.episode_mask, batch.episode_mini_mask, batch.next_state, r_arr, batch.misc)
         
-
-
     def take_action(self, observations, info, greedy=False):
         return self.forward(observations, info, greedy)
 
@@ -327,11 +234,8 @@ class IC3Net(nn.Module):
         num_actions = [self.n_actions,2]
         dim_actions = 2
         self.optimizer.zero_grad()
-
         n = self.nagents
-
         batch = self._process_batch(transitions_batch) #Transition batch make one large batch with all agents observations etc. 
-
         batch_size = len(batch.state)
 
         rewards = torch.Tensor(batch.reward)
@@ -339,10 +243,6 @@ class IC3Net(nn.Module):
         episode_mini_masks = torch.Tensor(batch.episode_mini_mask)
         actions = torch.Tensor(batch.action_taken).to(config.device)
         actions = actions.transpose(1, 2).view(-1, n, dim_actions)
-
-        # old_actions = torch.Tensor(np.concatenate(batch.action, 0))
-        # old_actions = old_actions.view(-1, n, dim_actions)
-        # print(old_actions == actions)
 
         # can't do batch forward.
         values = torch.cat(batch.value, dim=0)
@@ -364,50 +264,25 @@ class IC3Net(nn.Module):
         prev_advantage = 0
 
         for i in reversed(range(rewards.size(0))):
-            #coop_returns[i] = rewards[i] + self.args.gamma * prev_coop_return * episode_masks[i]
             ncoop_returns[i] = rewards[i] + self.args.discount * prev_ncoop_return * episode_masks[i] * episode_mini_masks[i]
 
-            #prev_coop_return = coop_returns[i].clone()
             prev_ncoop_return = ncoop_returns[i].clone()
-
-            #returns[i] = (self.args.mean_ratio * coop_returns[i].mean()) \
-                     #   + ((1 - self.args.mean_ratio) * ncoop_returns[i])
-
             returns[i] = ncoop_returns[i]
 
         for i in reversed(range(rewards.size(0))):
             advantages[i] = returns[i] - values.data[i]
 
-        # if self.args.normalize_rewards:
-        #     advantages = (advantages - advantages.mean()) / advantages.std()
-
-        # if self.args.continuous:
-        #     action_means, action_log_stds, action_stds = action_out
-        #     log_prob = normal_log_density(actions, action_means, action_log_stds, action_stds)
-        # else:
         log_p_a = [action_out[i].view(-1, num_actions[i]) for i in range(dim_actions)]
         actions = actions.contiguous().view(-1, dim_actions)
 
-        # if self.args.advantages_per_action:
-        #     log_prob = multinomials_log_densities(actions, log_p_a)
-        # else:
-        
-
         log_prob = multinomials_log_density(actions, log_p_a)
 
-       # entr = log_p_a.squeeze()
-
-        # if self.args.advantages_per_action:
-        #     action_loss = -advantages.view(-1).unsqueeze(-1) * log_prob
-        #     action_loss *= alive_masks.unsqueeze(-1)
-        # else:
         entropy = 0
-        # for i in range(len(log_p_a)):
-        #     entropy -= (log_p_a[i] * log_p_a[i].exp()).sum()
 
-        #Policy entropy:
         ent_coeff = torch.tensor(self.args.entropy_coeff).to(config.device)
+        #Policy action entropy
         entropy -= (log_p_a[0] * log_p_a[0].exp()).sum() * ent_coeff
+        #Communication action entropy
         entropy -= (log_p_a[1] * log_p_a[1].exp()).sum() * ent_coeff*0.05
 
         #entropy = entropy * torch.tensor(self.args.entropy_coeff).to(config.device)
@@ -428,25 +303,6 @@ class IC3Net(nn.Module):
         loss = action_loss + torch.tensor(self.args.value_coeff).to(config.device) * value_loss
 
         loss /= torch.tensor(batch_size).to(config.device)
-
-        # if not self.args.continuous:
-        #     # entropy regularization term
-        #     entropy = 0
-        #     for i in range(len(log_p_a)):
-        #         entropy -= (log_p_a[i] * log_p_a[i].exp()).sum()
-        #     stat['entropy'] = entropy.item()
-        #     if self.args.entr > 0:
-        #         loss -= self.args.entr * entropy
-
-
-        # self.optimizer.zero_grad()
-
-        # s = self.compute_grad(batch)
-        # merge_stat(s, stat)
-        # for p in self.params:
-        #     if p._grad is not None:
-        #         p._grad.data /= stat['num_steps']
-        # self.optimizer.step()
         
         loss.backward()
         self.optimizer.step()
@@ -454,16 +310,12 @@ class IC3Net(nn.Module):
         return stat['value_loss'], stat['action_loss'] 
 
     def init_hidden(self, batch_size):
-        # dim 0 = num of layers * num of direction
         return tuple(( torch.zeros(batch_size * self.nagents, self.hid_size, requires_grad=True).double().to(config.device),
                        torch.zeros(batch_size * self.nagents, self.hid_size, requires_grad=True).double().to(config.device)))
 
     def select_action(self, a_log_prob, greedy = False):
-        '''Input is tensor of size = [batch, n, log_probs] or list[tens1, tens2] of such tesors
-            Returns a tesnor of size [batch, n, 1] or list of such tensors '''
         ret = None
         if type(a_log_prob) == list:
-            #a = [torch.multinomial(prob.exp(), 1) for prob in a_log_prob]
             log_p_a = a_log_prob
             p_a = [[z.exp() for z in x] for x in log_p_a]
             if greedy == False:
@@ -472,7 +324,6 @@ class IC3Net(nn.Module):
                 ret = torch.stack([torch.stack([torch.argmax(x, dim = -1, keepdim=True).detach() for x in p]) for p in p_a])
         else:
             raise NotImplementedError
-            #a = torch.multinomial(a_log_prob.exp(), 1)
         return ret
     
     def make_action_dict(self, actions):
@@ -480,8 +331,6 @@ class IC3Net(nn.Module):
             returns either a list of dict or a single dict if batch == 1. dict is agent: action key-val pairs '''
         if type(actions) != list:
             actions = [actions]
-        
-
         ret = []
         for a in actions:
             if type(a) == torch.Tensor:

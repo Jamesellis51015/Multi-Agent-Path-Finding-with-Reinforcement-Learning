@@ -232,8 +232,6 @@ class AllVertex():
             self.all_v[v_id] = Vertex(v_id)
             return self.all_v[v_id]
     
-
-
 class Mstar_ODr():
     def __init__(self, end, expand_position, get_next_joint_policy_position, get_shortest_path_cost, sub_graphs = None, inflation = None):
         '''
@@ -248,11 +246,6 @@ class Mstar_ODr():
             -- get_SIC: returns the sum of individual cost (individual 
                         optimal path cost from vertex vk to vf)
          '''
-       # assert type(start) == list, "start parameter has to be list"
-       # assert type(end) == list, "end parameter has to be list"
-        #assert len(start) == len(end), "start and end positions have to be of same length"
-
-       # start = tuple(start)
         if type(end) == list:
             end = tuple(end)
         
@@ -282,15 +275,10 @@ class Mstar_ODr():
         self._init_own_sub_graph()
 
         
-       # print("init")
-
-        
-    
     def _init_own_sub_graph(self):
         hldr = list(self.end_dict.keys())
         hldr.sort()
         own_id = tuple(hldr)
-        #this method should only be called once
         if not own_id in self.sub_graphs:
             self.sub_graphs[own_id] = self.retrieve_next_optimal_pos
             print("Creating sub graph: {}".format(own_id))
@@ -323,20 +311,10 @@ class Mstar_ODr():
         for id in this_graph_sub_id:
             sub_end_dict[true_ids[id]] = self.end_dict[true_ids[id]]
 
-
-
-
-        #Graphs of higher dimension than self should not be queried.
-        
-       # assert type(graph_id) == frozenset or type(graph_id) == int
-        #if type(graph_id) == set:
         graph_id = tuple(sort_iterable(sub_start_dict.keys()))
         assert graph_id == tuple(sort_iterable(sub_end_dict.keys()))
-        
-        # NB: need function to rerieve shortest path cost for single agent.
 
         if not graph_id in self.sub_graphs:
-            #Init sub graph
             if len(graph_id) > 1:
                 print("End dict is {}".format(sub_end_dict))
                 temp = type(self)(sub_end_dict, self.expand_position, \
@@ -356,21 +334,13 @@ class Mstar_ODr():
         
         #map glabal keys back to relative keys:
         next_sub_v_relative_id = {}
-        this_graph_sub_id_keys =[k for k in this_graph_sub_id] #list(this_graph_sub_id.keys())
+        this_graph_sub_id_keys =[k for k in this_graph_sub_id]
         this_graph_sub_id_keys.sort()
         for i,val in enumerate(next_sub_v.values()):
             next_sub_v_relative_id[this_graph_sub_id_keys[i]] = val
         return next_sub_v_relative_id
 
-
     def retrieve_next_optimal_pos(self, start_dict, end_dict):
-        ''' For this methods own vetices and graph. '''
-        # assert self.end == end #end should be same
-
-        #check if start in all_v dict. If not do search.
-        # if start in all_v dict: check if has forward pointer; if not do search.
-        #return dict of {agent_id: vertex_tuple}
-        #NB also check that solution was found if search is done
         def sort_iterable(variable):
             a = list(variable)
             a.sort()
@@ -379,19 +349,15 @@ class Mstar_ODr():
         assert self.end_dict == end_dict
         assert type(start_dict) == dict
         assert set(start_dict.keys()) == set(end_dict.keys())
-        #print("In retrieve_next_optimal_pos")
         start_tup = []
         for k in sort_iterable(start_dict.keys()):
             start_tup.append(start_dict[k])
         start_tup = tuple(start_tup)
-        #print("start_dict: {}     start_tup: {}".format(start_dict, start_tup))
-
         end_tup = []
         for k in sort_iterable(end_dict.keys()):
             end_tup.append(end_dict[k])
         end_tup = tuple(end_tup)
-        #print("end_dict: {}     end_tup: {}".format(end_dict, end_tup))
-
+    
         start_v = (start_tup, start_tup)
         end_v = (end_tup, end_tup)
         actions = self.search(start_tup, end_tup)
@@ -402,28 +368,19 @@ class Mstar_ODr():
         elif v.forward_pointer is None:
             assert actions is None
             next_v_tup = None
-            #print("forward_pointer is None")
         else:
-            
-            #Makes sure next_v is standard vertex
             next_v = v.forward_pointer
-            #print("After search, getting v.fwdptr. Next)v is: {} is_standard: {}".format(next_v.v_id, next_v.is_standard))
             cntr = 0
             while (not next_v is None) and next_v.is_standard == False:
                 next_v = next_v.forward_pointer
-                #print("next_d: {}   is_standard {}".format(next_v.v_id, next_v.is_standard))
                 cntr += 1
                 if cntr > 50000:
                     raise Exception("Infinite while loop")
-            #time.sleep(10)
-            #print("while loop done")
             if next_v is None:
                 next_v_tup = None
             else:
                 next_v_tup = next_v.v_id
-        #print("prev_v is {} || next v is  {}".format(v.v_id, next_v_tup))
         if not next_v_tup is None:
-            #assert next_v.is_standard == True
             assert next_v_tup[0] == next_v_tup[1]
             next_v_dict = {}
             inter_v, root_v = next_v_tup
@@ -431,18 +388,13 @@ class Mstar_ODr():
                 next_v_dict[k] = inter_pos #(inter_pos, root_pos)
         else:
             next_v_dict = None
-        #print("next_v_dict is {}".format(next_v_dict))
-       # time.sleep(2)
         return next_v_dict
 
     
     def search(self,start_pos, end_pos, OD = True):
-        #print("Begin search in graph: {}".format(tuple(list(self.end_dict.keys()))))
-        # assert self.end == end_pos
-        open = PriorityQueue2() #SimplePriorityQ()
+        open = PriorityQueue2()
         start_v = (start_pos, start_pos)
         end_v = (end_pos, end_pos)
-        #self.all_v = AllVertex()
         if len(self.all_v.all_v) > 1:
             for k,v in self.all_v.all_v.items():
                 v.collision_set = frozenset()
@@ -452,29 +404,6 @@ class Mstar_ODr():
                 v.back_ptr = None
         
         vs = self.all_v.get(start_v)
-        #####################
-        # 
-        # if vs.v_id == end_v or not vs.forward_pointer is None:
-        #     print("Solution found")
-        #     #self._set_forward_pointers(vs)
-        #     if vs.v_id == end_v:
-        #         #print("vk.v_id == end_v")
-        #         #print("vk.v_id : {}  end_v: {}".format(vk.v_id, end_v))
-        #         return self._back_track(vs)
-        #     else:
-        #         #print("fwd ptr not none")
-        #         cntr1 = 0
-        #         while not vs.forward_pointer is None:
-        #             vs = vs.forward_pointer
-        #             cntr1 +=1
-        #             assert cntr1 < 50000
-        #         print("goal node found")
-        #         assert vs.v_id == end_v
-        #         return self._back_track(vs)
-
-
-
-        #####################
         vs.g = 0
         vs.f = vs.g + self.heuristic_SIC(vs.v_id)
         open.push((vs.f, vs))
@@ -482,30 +411,21 @@ class Mstar_ODr():
             expand_function = self.expand_rOD
         else:
             print("Not implemented")
-            #raise NotImplementedError
-            #expand_function = self.expand_joint_actions
 
         while not open.empty():
             vk = open.pop()
             test = vk.v_id
-            #print("vk from open: {}".format(test))
             if vk.v_id == end_v or vk.forward_pointer is not None:
-                #print("Solution found")
-                #self._set_forward_pointers(vk)
                 if vk.v_id == end_v:
                     self._set_forward_pointers(vk)
-                    #print("vk.v_id == end_v")
-                    #print("vk.v_id : {}  end_v: {}".format(vk.v_id, end_v))
                     return self._back_track(vk)
                 else:
                     self._set_forward_pointers(vk)
-                    #print("fwd ptr not none: {}".format(vk.forward_pointer.v_id))
                     cntr1 = 0
                     while vk.forward_pointer is not None:
                         vk = vk.forward_pointer
                         cntr1 +=1
                         assert cntr1 < 50000
-                    #print("goal node found")
                     assert vk.v_id == end_v
                     return self._back_track(vk)
                 
@@ -517,16 +437,13 @@ class Mstar_ODr():
                 col = self._is_pos_colliding(v_pos)
                 if vl.is_standard:
                     vl.add_back_set(vk)
-                    #print("vl_col before: {}  col to be added: {}".format(vl.collision_set, col))
                     vl.add_collision(col)
-                    #print("vl_col after: {}  col was added: {}".format(vl.collision_set, col))
                     self._backprop(vk, vl.collision_set, open)
                 if (len(col) == 0 or vl.is_standard==False) and vk.g + self.get_move_cost(vk,vl, end_pos) < vl.g:
                     vl.g = vk.g + self.get_move_cost(vk,vl, end_pos)
                     vl.f = vl.g + self.heuristic_SIC(vl.v_id)
                     vl.back_ptr = vk
                     open.push((vl.f, vl))
-                    #print("V added to open: {}".format(vl.v_id))
         print("returning no solution")
         print("This graph is {}".format(tuple(list(self.end_dict.keys()))))
         for k,v in self.all_v.all_v.items():
@@ -536,48 +453,17 @@ class Mstar_ODr():
             print("V: {}   Forward_ptr: {} ".format(k, f_ptr))
         return None
 
-    # def _col_is_none(self, other_set):
-    #     flag = True
-    #     other_set2 = []
-    #     is_sets_of_sets = [True if type(i) == frozenset else False for i in other_set]
-    #     if True in is_sets_of_sets:
-    #             assert all(is_sets_of_sets)
-    #     if False in is_sets_of_sets:
-    #             is_sets_of_sets_cpy = [True if i==False else True for i in is_sets_of_sets]
-    #             assert all(is_sets_of_sets_cpy)
-        
-    #     if all(is_sets_of_sets) and len(is_sets_of_sets)!=0:
-    #             for s in other_set:
-    #                 other_set2.append(s)
-    #     else:
-    #             other_set2.append(other_set)
-    #     for s in other_set2:
-    #             if len(s) != 0:
-    #                 flag = False
-    #     return flag
-
     def _backprop(self, v_k, c_l, open):
-        #NB check that not intermediate node
-        #print("in backprop, col set {}".format(c_l))
         if v_k.is_standard:
-            #if not c_l.issubset(v_k.collision_set):
             if not v_k.is_col_subset(c_l):
-                #print("is subset false:  {}  vk_col set: {}".format(v_k.is_col_subset(c_l), v_k.collision_set))
-               # print("In backprop vk is {} with col set {} Col being added: {}".format(v_k.v_id, v_k.collision_set, c_l))
                 v_k.add_collision(c_l)
                 if not v_k in open:
                     priority = v_k.g + self.heuristic_SIC(v_k.v_id)
                     open.push((priority, v_k))
                 for v_m in v_k.get_back_set():
                     self._backprop(v_m, v_k.collision_set, open)
-            #else:
-                #print("is subset true")
-        #else:
-            #print("not standard v")
 
-
-    def heuristic_SIC(self, v_id):
-        #Need to check which positions has been assigned and which not for intermediate nodes
+    def euristic_SICh(self, v_id):
         (inter_tup, vertex_pos_tup) = v_id
         total_cost = 0
         true_id = list(self.end_dict.keys())
@@ -588,8 +474,6 @@ class Mstar_ODr():
             else:
                 total_cost += self.heuristic_shortest_path_cost(i_true, pos)
         return total_cost * self.inflation
-
-
     
     def _is_pos_colliding(self, v_pos):
         '''Returns set of coll agents '''
@@ -663,10 +547,8 @@ class Mstar_ODr():
                         
 
     def expand_rOD(self, v, end_dict):
-        #print("Expanding v: {} with end_dict: {}".format(v.v_id, end_dict))
         assert len(end_dict) == self.v_len
         (inter_tup, vertex_pos_tup) = v.v_id
-        #collision_set = set()
         next_inter_tup = [] #list(inter_tup)
         # If standard node create next intermediate node base
         # else convert current inter_tup to list
@@ -686,7 +568,6 @@ class Mstar_ODr():
                     hldr = set([i for i in c])
                     hldr2 = set(n_p.keys())
                     assert hldr == hldr2
-                    #print("Sub graph optimal pol keys: {}".format(hldr))
                     for k,val in n_p.items():
                         assert next_tup[k] is None
                         next_tup[k] = val
@@ -706,14 +587,6 @@ class Mstar_ODr():
                     next_tup[k] = val
             next_inter_tup = list(next_tup.values())
             assert not None in next_inter_tup
-
-            ####
-            # for i,p in enumerate(inter_tup):
-            #     if i in collision_set:
-            #         next_inter_tup.append("_")
-            #     else:
-            #         n_pos = self.get_next_joint_policy_position(i, p, end_pos[i])
-            #         next_inter_tup.append(n_pos[-1])
         else:
             next_inter_tup = list(inter_tup)
         
@@ -729,16 +602,11 @@ class Mstar_ODr():
             #if not a standard vertex
             pos = vertex_pos_tup[this_inter_level]
             positions_taken = [p for p in next_inter_tup if p != '_']
-            #print("before expand postion...")
             n_pos = self.expand_position(i, pos)
-            #print("after expand_positions n_pos: {}".format(n_pos))
             valid_n_pos = [p for p in n_pos if not p in positions_taken]
 
             if len(valid_n_pos) == 0:
                 return []
-                #If no valid positions, produce coliding vertex
-                #valid_n_pos = [vertex_pos_tup[this_inter_level]]
-
             for p in valid_n_pos:
                 next_inter_tup[this_inter_level] = p 
                 all_next_inter_tup.append(tuple(next_inter_tup))
@@ -753,7 +621,6 @@ class Mstar_ODr():
                 v_ids.append((tuple(inter_v), tuple(inter_v)))
             else:
                 v_ids.append((tuple(inter_v), vertex_pos_tup))
-       # print("Expanded v: {}".format(v_ids))
         return v_ids
     
 
@@ -761,40 +628,30 @@ class Mstar_ODr():
         raise Exception("This function should not be called")
         (inter_tup, vertex_pos_tup) = v.v_id
         assert inter_tup == vertex_pos_tup
-
         num_agents = len(vertex_pos_tup)
         all_positions = dict()
         collisions = v.collision_set
-
         for i,p in enumerate(vertex_pos_tup):
             if i in collisions:
 
                 all_positions[i] = self.expand_position(i, p)
             else:
                 n_pos = self.get_next_joint_policy_position(i, p)
-                #assert type(n_pos) == list
-                all_positions[i] = n_pos#self.get_next_joint_policy_position(i, pos)
-            
+                all_positions[i] = n_pos 
         joint_positions = ParameterGrid(all_positions)
-
         next_v_id = []
         for j_pos in joint_positions:
             v_id = tuple([j_pos[i] for i in range(num_agents)])
             v_id = (v_id, v_id)
             next_v_id.append(v_id)
-
         return next_v_id
             
-            
     def _set_forward_pointers(self, goal_v):
-        #print("begin _set_forward_pointers")
         this_v = goal_v
         while not this_v.back_ptr is None:
             back_v = this_v.back_ptr
             back_v.forward_pointer = this_v
             this_v = back_v
-        #print("end_set_forward_pointers")
-
 
     def _back_track(self, goal_v):
         '''Returns a dictionary of actions for the optimal path '''
@@ -811,9 +668,7 @@ class Mstar_ODr():
         while not next_v is None:
             if next_v.is_standard:
                 all_v.append(next_v.v_id[-1])
-               # print("In _backtrack while: {}".format(next_v.v_id[-1]))
             next_v = next_v.back_ptr
-       # print("exit while")
         #Get actions from vertices:
         all_actions = []
         prev_v = all_v[-1]
@@ -824,7 +679,6 @@ class Mstar_ODr():
                 actions[i] = self.pos_act[position_diff]
             prev_v = v
             all_actions.append(actions)
-       # print("exit backtrack")
         return all_actions
 
     def _add_tup(self, a,b):

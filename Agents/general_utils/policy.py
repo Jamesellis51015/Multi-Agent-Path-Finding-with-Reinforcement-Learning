@@ -6,6 +6,46 @@ import torch.optim as optim
 from gym import spaces
 
 
+def make_base_policy(policy_type, double_obs_space = False):
+    if double_obs_space:
+        if policy_type == "mlp":
+            base_policy = Mlp_Base2
+        elif policy_type == "primal7":
+            base_policy = PRIMAL_Base7
+        elif policy_type == "primal9":
+            base_policy = PRIMAL_Base9
+        else:
+            raise Exception("Base policy type not implemented")
+        return base_policy
+    else:
+        if policy_type == "mlp":
+            base_policy = Mlp_Base
+        elif policy_type == "cnn_old":
+            base_policy = CNN_Base_Old
+        elif policy_type == "cnn_new":
+            base_policy = CNN_Base_New
+        elif policy_type == "primal1":
+            base_policy = PRIMAL_Base
+        elif policy_type == "primal2":
+            base_policy = PRIMAL_Base2
+        elif policy_type == "primal2_2":
+            base_policy = PRIMAL_Base2_2
+        elif policy_type == "primal3":
+            base_policy = PRIMAL_Base3
+        elif policy_type == "primal4":
+            base_policy = PRIMAL_Base4
+        elif policy_type == "primal5":
+            base_policy = PRIMAL_Base5
+        elif policy_type == "primal6":
+            base_policy = PRIMAL_Base6
+        elif policy_type == "primal7":
+            base_policy = PRIMAL_Base7
+        elif policy_type == "primal9":
+            base_policy = PRIMAL_Base9
+        else:
+            raise Exception("Base policy type not implemented")
+        return base_policy
+
 
 class CNN_Base_Old(nn.Module):
     def __init__(self, input_dim, hidden_dim= 120, nonlin = F.leaky_relu):
@@ -101,157 +141,6 @@ class Mlp_Base2(nn.Module):
         x3 = torch.cat([x1,x2], dim=-1)
         return x3
 
-def make_base_policy(policy_type, double_obs_space = False):
-    if double_obs_space:
-        if policy_type == "mlp":
-            base_policy = Mlp_Base2
-        elif policy_type == "primal7":
-            base_policy = PRIMAL_Base7
-        elif policy_type == "primal9":
-            base_policy = PRIMAL_Base9
-        else:
-            raise Exception("Base policy type not implemented")
-        return base_policy
-    else:
-        if policy_type == "mlp":
-            base_policy = Mlp_Base
-        elif policy_type == "cnn_old":
-            base_policy = CNN_Base_Old
-        elif policy_type == "cnn_new":
-            base_policy = CNN_Base_New
-        elif policy_type == "primal1":
-            base_policy = PRIMAL_Base
-        elif policy_type == "primal2":
-            base_policy = PRIMAL_Base2
-        elif policy_type == "primal2_2":
-            base_policy = PRIMAL_Base2_2
-        elif policy_type == "primal3":
-            base_policy = PRIMAL_Base3
-        elif policy_type == "primal4":
-            base_policy = PRIMAL_Base4
-        elif policy_type == "primal5":
-            base_policy = PRIMAL_Base5
-        elif policy_type == "primal6":
-            base_policy = PRIMAL_Base6
-        elif policy_type == "primal7":
-            base_policy = PRIMAL_Base7
-        elif policy_type == "primal9":
-            base_policy = PRIMAL_Base9
-        else:
-            raise Exception("Base policy type not implemented")
-        return base_policy
-# class ActorMlp(Mlp_Base):
-#     def __init__(self, observation_space, action_space, h_dim = 120):
-#         super(ActorMlp, self).__init__(observation_space, h_dim)
-#         n_actions = action_space.n
-#         self.action_layer = nn.Linear(h_dim, n_actions)
-#     def forward(self, x):
-#         out = super(ActorMlp, self).forward(x)
-#         probs = F.softmax(out, dim=1)
-#         return probs
-
-# class ActorCNN_Old(CNN_Base_Old):
-#     def __init__(self, observation_space, action_space, h_dim = 120):
-#         super(ActorCNN_Old, self).__init__(observation_space, h_dim)
-#         n_actions = action_space.n
-#         self.action_layer = nn.Linear(h_dim, n_actions)
-#     def forward(self, x):
-#         out = super(ActorCNN_Old, self).forward(x)
-#         out = self.action_layer(out)
-#         probs = F.softmax(out, dim=1)
-#         return probs
-
-# class ActorCNN_New(CNN_Base_New):
-#     def __init__(self, observation_space, action_space, h_dim = 120):
-#         super(ActorCNN_New, self).__init__(observation_space, h_dim)
-#         n_actions = action_space.n
-#         self.action_layer = nn.Linear(h_dim, n_actions)
-#     def forward(self, x):
-#         out = super(ActorCNN_New, self).forward(x)
-#         out = self.action_layer(out)
-#         probs = F.softmax(out, dim=1)
-#         return probs
-
-# def make_policies(policy_type):
-#     if policy_type == "mlp":
-#         base_policy = Mlp_Base
-#     elif policy_type == "cnn_old":
-#         base_policy = CNN_Base_Old
-#     elif policy_type == "cnn_new":
-#         base_policy = CNN_Base_New
-#     else:
-#         raise Exception("Base policy type not implemented")
-    
-    # class Actor(base_policy):
-    #     def __init__(self, observation_space, action_space, comm_channels, lr, h_dim = 120):
-    #         super(Actor, self).__init__(observation_space, h_dim)
-    #         n_actions = action_space.n
-    #         self.fc_in = nn.Linear(h_dim + comm_channels, h_dim)
-    #         self.out_layer = nn.Linear(h_dim, n_actions)
-    #         self.optimizer = optim.Adam(self.parameters(), lr =lr)
-    #     def forward(self, x, comm_in):
-    #         out = super(Actor, self).forward(x)
-    #         out = self.fc_in(torch.cat([out, comm_in], dim = -1))
-    #         out = F.relu(out)
-    #         out = self.out_layer(out)
-    #         probs = F.softmax(out, dim=1)
-    #         return probs
-    #     def take_action(self, obs, comm, greedy = False):
-    #         a_prob = self.forward(obs, comm)
-    #         if greedy:
-    #             a = torch.argmax(a_prob, dim=-1, keepdim=True)
-    #         else:
-    #             a = torch.multinomial(a_prob, 1)
-    #         # a_prob_chosen = torch.gather(a_prob, -1, a)
-    #         return (a , a_prob)
-
-    # class Critic(base_policy):
-    #     def __init__(self, observation_space, lr, h_dim = 120):
-    #         super(Critic, self).__init__(observation_space, h_dim)
-    #         self.fc_in = nn.Linear(h_dim , h_dim)
-    #         self.out_layer = nn.Linear(h_dim, 1)
-    #         self.optimizer = optim.Adam(self.parameters(), lr =lr)
-    #     def forward(self, x):
-    #         out = super(Critic, self).forward(x)
-    #         out = self.fc_in(out)
-    #         out = F.relu(out)
-    #         out = self.out_layer(out)
-    #         return out
-
-    # class CommNet(base_policy):
-    #     def __init__(self, observation_space, comm_in, comm_out, lr, h_dim = 120):
-    #         super(CommNet, self).__init__(observation_space, h_dim)
-    #         # if comm_out == 0:
-    #         #     self.zero_comm = True
-    #         #     comm_out = 1
-    #         # else:
-    #         #     self.zero_comm = False
-    #         self.comm_out= comm_out
-    #         self.fc_in = nn.Linear(h_dim + comm_in, h_dim)
-    #         self.out_layer = nn.Linear(h_dim, comm_out)
-    #         self.optimizer = optim.Adam(self.parameters(), lr =lr)
-    #     def forward(self, x, comm_in):
-    #         out = super(CommNet, self).forward(x)
-    #         out = self.fc_in(torch.cat([out, comm_in], dim = -1))
-    #         out = F.relu(out)
-    #         out = self.out_layer(out)
-    #         # if self.zero_comm:
-    #         #     z = torch.zeros(out.size())
-    #         #     out = out*z
-    #         return out
-    #     def init_message(self):
-    #         init_val = 0.0
-    #         return torch.tensor([[init_val for _ in range(self.comm_out)]], requires_grad=True)
-    # return [Actor, Critic, CommNet]
-
-
-
-
-
-##################################
-
-
-
 
 class PRIMAL_Base(nn.Module):
     def __init__(self, input_dim, hidden_dim=None, nonlin = None):
@@ -303,7 +192,6 @@ class PRIMAL_Base(nn.Module):
         x = self.fc1(x)
         x = F.relu(x)
         return x
-
 
 class PRIMAL_Base2(nn.Module):
     def __init__(self, input_dim, hidden_dim=None, nonlin = None):
@@ -574,12 +462,6 @@ class PRIMAL_Base6(nn.Module): #For env size  = 5
         d = (d+2*p - (k-1) - 1)/1 + 1
         self.c2 = nn.Conv2d(128, 128, k, padding=p)
         self.c3 = nn.Conv2d(128, 128, k, padding=p)
-        # self.mp1 = nn.MaxPool2d(3,1)
-        # d = (d-(2-1) - 1)/2 + 1
-        # self.c4 = nn.Conv2d(128, 256, k, padding=p)
-        # self.c5 = nn.Conv2d(256, 256, k, padding=p)
-        # self.c6 = nn.Conv2d(256, 128, k, padding=p)
-        # self.mp2 = nn.MaxPool2d(3,2)
         k=2
         self.c7 = nn.Conv2d(128, self.hidden_dim, k)
 
@@ -594,25 +476,14 @@ class PRIMAL_Base6(nn.Module): #For env size  = 5
         if type(x) == tuple:
             (x, cat_end) = x
         batch_size = x.size(0)
-        #x = self.model(x)
-
         x = self.c1(x)
         x = F.relu(x)
         x = self.c2(x)
         x = F.relu(x)
         x = self.c3(x)
         x = F.relu(x)
-        # x = self.mp1(x)
-        # x = self.c4(x)
-        # x = F.relu(x)
-        # x = self.c5(x)
-        # x = F.relu(x)
-        # x = self.c6(x)
-        # x = F.relu(x)
-        # x = self.mp2(x)
         x = self.c7(x)
         x = F.relu(x)
-
         x = x.reshape((batch_size,-1))
         if cat_end is None:
             x = self.fc1(x)
@@ -635,12 +506,6 @@ class PRIMAL_Base7(nn.Module): #For env size  = 7
         self.c2 = nn.Conv2d(128, 128, k, padding=p)
         self.c3 = nn.Conv2d(128, 128, k, padding=p)
         self.c8 = nn.Conv2d(128, 128, k, padding=p)
-        # self.mp1 = nn.MaxPool2d(3,1)
-        # d = (d-(2-1) - 1)/2 + 1
-        # self.c4 = nn.Conv2d(128, 256, k, padding=p)
-        # self.c5 = nn.Conv2d(256, 256, k, padding=p)
-        # self.c6 = nn.Conv2d(256, 128, k, padding=p)
-        # self.mp2 = nn.MaxPool2d(3,2)
         k=3
         self.c7 = nn.Conv2d(128, self.hidden_dim, k)
 
@@ -650,19 +515,12 @@ class PRIMAL_Base7(nn.Module): #For env size  = 7
         if cat_end is None:
             self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
         else:
-            #self.cat_end_mid = nn.Linear(cat_end)
             self.fc1 = nn.Linear(self.flat_cnn_out_size + cat_end, hidden_dim)
-            # self.cat_end_mid = nn.Linear(cat_end, 36)
-            # self.fc1 = nn.Linear(self.flat_cnn_out_size + 36, hidden_dim)
-
-        #self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
     
     def forward(self, x, cat_end = None):
         if type(x) == tuple:
             (x, cat_end) = x
         batch_size = x.size(0)
-        #x = self.model(x)
-
         x = self.c1(x)
         x = F.relu(x)
         x = self.c2(x)
@@ -671,26 +529,13 @@ class PRIMAL_Base7(nn.Module): #For env size  = 7
         x = F.relu(x)
         x = self.c8(x)
         x = F.relu(x)
-        # x = self.mp1(x)
-        # x = self.c4(x)
-        # x = F.relu(x)
-        # x = self.c5(x)
-        # x = F.relu(x)
-        # x = self.c6(x)
-        # x = F.relu(x)
-        # x = self.mp2(x)
         x = self.c7(x)
         x = F.relu(x)
-
         x = x.reshape((batch_size,-1))
-
         if cat_end is None:
             x = self.fc1(x)
         else:
-            #cat_end = self.cat_end_mid(cat_end)
             x = self.fc1(torch.cat([x,cat_end], dim=1))
-
-        #x = self.fc1(x)
         x = F.relu(x)
         return x
 
@@ -714,12 +559,6 @@ class PRIMAL_Base9(nn.Module): #For env size  = 9
         self.c5 = nn.Conv2d(256, 256, k, padding=p)
         self.c6 = nn.Conv2d(256, 256, k, padding=p)
         self.mp2 = nn.MaxPool2d(2,2)
-        # self.mp1 = nn.MaxPool2d(3,1)
-        # d = (d-(2-1) - 1)/2 + 1
-        # self.c4 = nn.Conv2d(128, 256, k, padding=p)
-        # self.c5 = nn.Conv2d(256, 256, k, padding=p)
-        # self.c6 = nn.Conv2d(256, 128, k, padding=p)
-        # self.mp2 = nn.MaxPool2d(3,2)
 
         if cat_end is not None:
             self.c7 = nn.Conv2d(256, self.hidden_dim - 12, 2)
@@ -733,20 +572,15 @@ class PRIMAL_Base9(nn.Module): #For env size  = 9
             pass
             #self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
         else:
-            #self.flat_cnn_out_size - 12
             #self.cat_end_mid = nn.Linear(cat_end)
             #self.fc1 = nn.Linear(self.flat_cnn_out_size + cat_end, hidden_dim)
             self.cat_end_mid = nn.Linear(cat_end, 12)
-            #self.fc1 = nn.Linear(self.flat_cnn_out_size + 12, hidden_dim)
-
         #self.fc1 = nn.Linear(self.flat_cnn_out_size, hidden_dim)
     
     def forward(self, x, cat_end = None):
         if type(x) == tuple:
             (x, cat_end) = x
         batch_size = x.size(0)
-        #x = self.model(x)
-
         x = self.c1(x)
         x = F.relu(x)
         x = self.c2(x)
@@ -763,32 +597,9 @@ class PRIMAL_Base9(nn.Module): #For env size  = 9
         x = self.mp2(x)
         x = self.c7(x)
         x = F.relu(x.reshape(batch_size, -1))
-
-
-
-        #x = self.c8(x)
-        #x = F.relu(x)
-        # x = self.mp1(x)
-        # x = self.c4(x)
-        # x = F.relu(x)
-        # x = self.c5(x)
-        # x = F.relu(x)
-        # x = self.c6(x)
-        # x = F.relu(x)
-        # x = self.mp2(x)
-        #x = self.c7(x)
-        #x = F.relu(x)
-
-        #x = x.reshape((batch_size,-1))
-
         if cat_end is None:
-            #x = self.fc1(x)
             pass
         else:
             cat_end = F.relu(self.cat_end_mid(cat_end))
             x = torch.cat([x,cat_end], dim=1)
-
-        #x = self.fc1(x)
-        #x = F.relu(x)
-
         return x

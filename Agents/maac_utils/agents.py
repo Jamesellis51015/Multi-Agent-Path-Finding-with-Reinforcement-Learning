@@ -1,3 +1,5 @@
+'''Modified from https://github.com/shariqiqbal2810/MAAC '''
+
 from torch import Tensor
 from torch.autograd import Variable
 from torch.optim import Adam

@@ -1,3 +1,6 @@
+'''
+Modified from https://github.com/shariqiqbal2810/MAAC 
+'''
 import numpy as np
 from torch import Tensor
 from torch.autograd import Variable

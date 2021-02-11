@@ -1,7 +1,7 @@
 # Muli-Agent Path Finding with Reinforcement Learning
 
 ## This repository contains:
-- Multi-Agent Gridworld Environment: A basic gridworld implementation where agents can collide with each other as well as obstacles. Agents have to navigate to their goal locations. Majority of the code for the environment can be found in Env/grid_env.py and Env/env.py
+- ### Multi-Agent Gridworld Environment: A basic gridworld implementation where agents can collide with each other as well as obstacles. Agents have to navigate to their goal locations. Majority of the code for the environment can be found in Env/grid_env.py and Env/env.py
 
 ![Alt text](gridworld_example.png?raw=true "")
 
@@ -13,22 +13,26 @@
 
 - ### ODM* code in utils/ODM_star.py
 
-Requirements in environment.yml file.
+# How to run examples:
 
-For an example run manual_test.py and type commands according to instructions. (Sometimes fails first time, if its a problem with command inputs, try again.)
+## Create a conda 'gridworld' environment using the environment.yml file:
+conda env create -f environment.yml
+conda activate gridworld
 
-Credits for rendering goes to:
+## Manually contol an agent on a gridworld:
+Run gridworld_manual.py with arguments for the map size [x=y=map_shape], the number of agents and obstacle density:
 
-```
-@misc{gym_minigrid,
-  author = {Chevalier-Boisvert, Maxime and Willems, Lucas and Pal, Suman},
-  title = {Minimalistic Gridworld Environment for OpenAI Gym},
-  year = {2018},
-  publisher = {GitHub},
-  journal = {GitHub repository},
-  howpublished = {\url{https://github.com/maximecb/gym-minigrid}},
-}
-```
+python gridworld_manual --map_shape 10 --n_agents 1 --obj_density 0.2
+
+To see a command-line printout of the observations add --verbose
+
+Follow comand instuctions to make agents move. 
+For example: 0 1 1 2 s    => agent 0 move up ; agent 1 move right ; step
+
+## Run ODM* on an environment:
+python odmstar_example.py --map_shape 32 --n_agents 20 --obj_density 0.2 --inflation 1.1
+
+
 ## Code Credits:
 
 Rendering of Gridworld environment:

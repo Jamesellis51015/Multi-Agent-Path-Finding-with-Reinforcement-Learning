@@ -65,7 +65,7 @@ class Heuristics():
 
 
     def init_joint_policy_graphs(self, start, end):
-        '''Performs dijkstra search for each agent and stores the result
+        '''Performs BFS for each agent and stores the result
             in a dictionary. '''
         assert type(start) == list, Exception("start parameter has to be list")
         assert type(end) == list, Exception("end parameter has to be list")
@@ -80,7 +80,7 @@ class Heuristics():
 
     def expand_position(self,agent_handle, position):
         '''Returns a list of possible next positions for an agent (ignoring other agents) '''
-        assert not self.dijkstra_search is None
+        #assert not self.dijkstra_search is None
         assert type(position) == tuple and len(position) == 2
         assert agent_handle in self.dijkstra_graphs
         this_graph = self.dijkstra_graphs[agent_handle]
@@ -90,42 +90,15 @@ class Heuristics():
     
     def get_next_joint_policy_position(self,agent_handle, position, goal_pos=None):
         '''Returns the shortest path next position for an agent'''
-        assert not self.dijkstra_search is None
+       # assert not self.dijkstra_search is None
         assert type(position) == tuple and len(position) == 2
         assert agent_handle in self.dijkstra_graphs
-        
         this_graph = self.dijkstra_graphs[agent_handle]
-
         assert position in this_graph
-
         next_postions = [self.add_tup(position, d, return_tuple=True) for d in self.directions]
-
-        
-
         next_position_costs = {this_graph[n_pos].move_cost: n_pos for n_pos in next_postions if n_pos in this_graph}
-        # next_position_costs = dict()
-        # next_position_pos = dict()
-        # for i,n_pos in enumerate(next_postions):
-        #     if n_pos in this_graph:
-        #         next_position_costs[i] = this_graph[n_pos].move_cost
-        #         next_position_pos[i] = n_pos
-
-        # next_position_costs = {this_graph[n_pos].move_cost: n_pos for n_pos in next_postions if n_pos in this_graph}
-        # next_position_costs2 = dict()
-        # for pos in next_postions:
-        #     if pos in this_graph:
-        #         next_position_costs2[this_graph[pos].move_cost] = pos
-
-        # for i, k in enumerate(next_position_costs.keys()):
-        #     if k in list(next_position_costs.keys())[i:]:
-        #         pass
-        # for p in next_postions:
-        #     if p in this_graph:
-        #         pass
         min_cost = min(next_position_costs.keys())
         min_cost_next_pos = next_position_costs[min_cost]
-        # if position == goal_pos:
-        #     assert min_cost_next_pos == goal_pos
         return [min_cost_next_pos]
 
     def get_SIC(self, vertex):
@@ -143,44 +116,33 @@ class Heuristics():
 
 
 
-    def mstar_search4_OD(self, start, end, inflation = 1.0, memory_limit = None, return_time_taken=False):
-        t_hldr1 = time.time()
+    #def mstar_search4_OD(self, start, end, inflation = 1.0, memory_limit = None, return_time_taken=False):
+    def ODmstar(self, start, end, inflation = 1.0, memory_limit = None, return_time_taken=False):
         if self.dijkstra_graphs is None:
-            #print("Joint policy graphs not initialized. Initialzing now")
             self.init_joint_policy_graphs(start, end)
         else:
             pass
-            #print("Joint policy graphs already present...re-using graphs")
-
         t2 = time.time()
-        #print("Time taken for joint policy graphs: {}".format(t2 - t_hldr1))
-
         mstar = Mstar_OD(start, end, self.expand_position, self.get_next_joint_policy_position, self.get_shorterst_path_cost, inflation)
-        
-
         all_actions = mstar.search(OD = True, memory_limit = memory_limit)
         time_taken = time.time() - t2
-        #print("Time taken for M star4 OD: {}".format(time.time() - t2))
         if return_time_taken:
             return all_actions, time_taken
         else:
             return all_actions
     
-    def mstar_search4_Not_OD(self, start, end):
-        t_hldr1 = time.time()
+    #def mstar_search4_Not_OD(self, start, end):
+    def mstar_Not_OD(self, start, end):
         if self.dijkstra_graphs is None:
-            print("Joint policy graphs not initialized. Initialzing now")
             self.init_joint_policy_graphs(start, end)
         else:
-            print("Joint policy graphs already present...re-using graphs")
-
-        t2 = time.time()
-        print("Time taken for joint policy graphs: {}".format(t2 - t_hldr1))
-
+            pass
+            #print("Joint policy graphs already present...re-using graphs")
+        #t2 = time.time()
+        #print("Time taken for joint policy graphs: {}".format(t2 - t_hldr1))
         mstar = Mstar_OD(start, end, self.expand_position, self.get_next_joint_policy_position, self.get_shorterst_path_cost)
-
         all_actions = mstar.search(OD = False)
-        print("Time taken for M star4 Not OD: {}".format(time.time() - t2))
+        #print("Time taken for M star4 Not OD: {}".format(time.time() - t2))
         return all_actions
 
 
@@ -192,16 +154,12 @@ class Heuristics():
         else:
             pass
             #print("Joint policy graphs already present...re-using graphs")
-
         t2 = time.time()
         #print("Time taken for joint policy graphs: {}".format(t2 - t_hldr1))
-
         mstar = Mstar_ODr(end, self.expand_position, self.get_next_joint_policy_position, self.get_shorterst_path_cost, inflation=inflation)
-        
         all_actions = mstar.search(tuple(start), tuple(end))
         time_taken = time.time() - t2
         #print("Time taken for ODrM*: {}".format(time.time() - t2))
-
         if return_time_taken:
             return all_actions, time_taken
         else:
@@ -221,10 +179,8 @@ class Heuristics():
             n_pos_hldr = []
             for d in directions:
                 new_pos = tuple(self.add_tup(p, d))
-
                 p_diff = tuple(self.add_tup(new_pos, self.mult_tup(p, -1)))
                 assert p_diff in pos_act.keys()
-
                 if new_pos in this_graph:
                     n_pos_hldr.append(new_pos)
             if i in coll:
@@ -252,66 +208,66 @@ class Heuristics():
         return all_v
 
 
-    def dijkstra_search(self, start_pos, end_pos, ignore = ["agent"]):
-        '''
-        NB: The cost of starts at 0 at the start position and continues thougough 
-        all postions. In order to use the cost to search for the cheapest path,
-        start, place end postion at start position.
-        Searches the entire search space and returns a dictionary of the closed set '''
+    # def dijkstra_search(self, start_pos, end_pos, ignore = ["agent"]):
+    #     '''
+    #     NB: The cost of starts at 0 at the start position and continues thougough 
+    #     all postions. In order to use the cost to search for the cheapest path,
+    #     start, place end postion at start position.
+    #     Searches the entire search space and returns a dictionary of the closed set '''
 
-        raise Exception("Use Breadth First Search instead")
+    #     raise Exception("Use Breadth First Search instead")
 
-        class myQueue():
-            def __init__(self):
-                self.q = Queue()
-                self.lookup = dict()
-            def put(self, item):
-                if not item.pos in self.lookup:
-                    self.q.put(item)
-                    self.lookup[item.pos] = item
-            def get(self):
-                item = self.q.get()
-                del self.lookup[item.pos]
-                return item
-            def empty(self):
-                return self.q.empty()
+    #     class myQueue():
+    #         def __init__(self):
+    #             self.q = Queue()
+    #             self.lookup = dict()
+    #         def put(self, item):
+    #             if not item.pos in self.lookup:
+    #                 self.q.put(item)
+    #                 self.lookup[item.pos] = item
+    #         def get(self):
+    #             item = self.q.get()
+    #             del self.lookup[item.pos]
+    #             return item
+    #         def empty(self):
+    #             return self.q.empty()
 
-        obstacle_types = copy.deepcopy(self.obstacle_types)
-        for ig in ignore:
-            if ig in self.obstacle_types:
-                ind = obstacle_types.index(ig)
-                del obstacle_types[ind]
-       # open = Queue()
-        open = myQueue()
-        #open = []
-        closed = {}
-        start_node = self.Node(start_pos, 0, None, None)
-        path_found_flag = False
-        open.put(start_node)
-        #open.append(start_node)
-        while not open.empty():
-        #while len(open) != 0:
-            #(_, curr_node) = open.get()
-            curr_node = open.get()
-            #curr_node = open[-1]
-            #del open[-1]
-            if curr_node.pos == end_pos:
-                closed[curr_node.pos] = curr_node
-                path_found_flag = True
-            next_nodes_pos = self._get_neigbours(curr_node.pos, obstacle_types)
+    #     obstacle_types = copy.deepcopy(self.obstacle_types)
+    #     for ig in ignore:
+    #         if ig in self.obstacle_types:
+    #             ind = obstacle_types.index(ig)
+    #             del obstacle_types[ind]
+    #    # open = Queue()
+    #     open = myQueue()
+    #     #open = []
+    #     closed = {}
+    #     start_node = self.Node(start_pos, 0, None, None)
+    #     path_found_flag = False
+    #     open.put(start_node)
+    #     #open.append(start_node)
+    #     while not open.empty():
+    #     #while len(open) != 0:
+    #         #(_, curr_node) = open.get()
+    #         curr_node = open.get()
+    #         #curr_node = open[-1]
+    #         #del open[-1]
+    #         if curr_node.pos == end_pos:
+    #             closed[curr_node.pos] = curr_node
+    #             path_found_flag = True
+    #         next_nodes_pos = self._get_neigbours(curr_node.pos, obstacle_types)
             
-            move_cost = curr_node.move_cost + 1
-            for n in next_nodes_pos:
-                (p,a) = n 
-                p = tuple(p)
-                if not p in closed.keys(): #or (closed[p]).move_cost > move_cost:
-                    #priority = move_cost + heuristic(p, end_pos)
-                    #open.put((priority, self.Node(p, move_cost, a, curr_node.pos)))
+    #         move_cost = curr_node.move_cost + 1
+    #         for n in next_nodes_pos:
+    #             (p,a) = n 
+    #             p = tuple(p)
+    #             if not p in closed.keys(): #or (closed[p]).move_cost > move_cost:
+    #                 #priority = move_cost + heuristic(p, end_pos)
+    #                 #open.put((priority, self.Node(p, move_cost, a, curr_node.pos)))
 
-                    open.put(self.Node(p, move_cost, a, curr_node.pos))
-                    #open.append(self.Node(p, move_cost, a, curr_node.pos))
-            closed[curr_node.pos] = curr_node
-        return closed
+    #                 open.put(self.Node(p, move_cost, a, curr_node.pos))
+    #                 #open.append(self.Node(p, move_cost, a, curr_node.pos))
+    #         closed[curr_node.pos] = curr_node
+    #     return closed
 
     def BFS(self, start_pos, end_pos, ignore = ["agent"]):
         assert type(start_pos) == tuple
@@ -579,7 +535,6 @@ class Heuristics():
         act.append(0)
         return act
 
-
     def is_blocking(self, agent_id):
         '''Is a particular agent blocking any other agent '''
         pos = self.env.agents[agent_id].pos
@@ -596,8 +551,6 @@ class Heuristics():
                 if abs(len(act_path2) - len(act_path1)) >= (self.block_true_dist*2+1) or len(act_path2) == 0:
                     return True
         return False
-
-###########################################################
 
     def _is_colliding(self, v):
         hldr = set()
@@ -658,8 +611,6 @@ class Heuristics():
             inter_v.append(tuple( ((next_inter_level,), tuple(joint_p_cyp))))
 
         return inter_v
-
-
 
     def a_star_search5(self, start_pos, goal_pos, ignore = ["agent"], pos_obstacle = None):
         '''Single agent, single goal, ignore object of type agent.
@@ -767,8 +718,6 @@ class Heuristics():
             if ig in self.obstacle_types:
                 ind = obstacle_types.index(ig)
                 del obstacle_types[ind]
-        
-        #######################
         assert len(start_pos) == len(goal_pos)
         assert type(start_pos) == tuple
         assert type(goal_pos) == tuple
@@ -810,17 +759,6 @@ class Heuristics():
                     vn.g = vk.g + get_cost(vk, vn, intermediate=True)
                     vn.f = vn.g + heuristic_f(vn.pos, goal_pos)
                     open.push((vn.f, vn))
-        # action_path = []
-        # node_path = []
-        # closed = all_v.all_v
-        # if goal_pos in closed.keys():
-        #     n = closed[goal_pos]
-        #     node_path.append(n.pos)
-        #     while not n.prev_act is None:
-        #         action_path.append(n.prev_act)
-        #         n = closed[n.prev_pos]
-        #         node_path.append(n.pos)
-        #     action_path.reverse()
         if solution_v is None:
             return None
         else:
@@ -868,18 +806,6 @@ class Heuristics():
         for ai in a:
             ans.append(ai*m)
         return tuple(ans)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     def a_star_search4(self,start_pos, goal_pos, ignore = ["agent"], pos_obstacle = None):

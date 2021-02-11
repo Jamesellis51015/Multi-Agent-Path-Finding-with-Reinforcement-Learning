@@ -1,3 +1,7 @@
+'''
+Modified from https://github.com/shariqiqbal2810/MAAC 
+'''
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -35,15 +39,8 @@ class AttentionCritic(nn.Module):
         self.state_encoders = nn.ModuleList()
         # iterate over agents
         for sdim, adim in sa_sizes:
-           # idim = sdim + adim
             odim = adim
             encoder = self.make_critic_encoder(sdim,adim, hidden_dim)
-            # encoder = nn.Sequential()
-            # if norm_in:
-            #     encoder.add_module('enc_bn', nn.BatchNorm1d(idim,
-            #                                                 affine=False))
-            # encoder.add_module('enc_fc1', nn.Linear(idim, hidden_dim))
-            # encoder.add_module('enc_nl', nn.LeakyReLU())
             self.critic_encoders.append(encoder)
             critic = nn.Sequential()
             critic.add_module('critic_fc1', nn.Linear(2 * hidden_dim,
@@ -53,13 +50,6 @@ class AttentionCritic(nn.Module):
             self.critics.append(critic)
 
             state_encoder = self.make_state_encoder(sdim, hidden_dim)
-            # state_encoder = nn.Sequential()
-            # if norm_in:
-            #     state_encoder.add_module('s_enc_bn', nn.BatchNorm1d(
-            #                                 sdim, affine=False))
-            # state_encoder.add_module('s_enc_fc1', nn.Linear(sdim,
-            #                                                 hidden_dim))
-            # state_encoder.add_module('s_enc_nl', nn.LeakyReLU())
             self.state_encoders.append(state_encoder)
 
         attend_dim = hidden_dim // attend_heads
@@ -75,16 +65,6 @@ class AttentionCritic(nn.Module):
 
         self.shared_modules = [self.key_extractors, self.selector_extractors,
                                self.value_extractors, self.critic_encoders]
-        # hldr1 = self.critic_encoders.parameters()
-        # hldr2 = self.critic_encoders[0]
-        # hldr3 = self.critic_encoders[0].parameters()
-        # a = nn.ModuleList()
-        # b = nn.Sequential(nn.Linear(100, 100))
-        # a.append(b)
-        # c = nn.Sequential(nn.Linear(100, 50))
-        # a.append(c)
-        # hldr4 = a.parameters
-        # hldr5 = []
 
     def shared_parameters(self):
         """
@@ -202,16 +182,10 @@ class AttentionCritic(nn.Module):
                     super(MlpCritEncoder, self).__init__(dim_cat, hidden_dim, nonlin= F.leaky_relu)
                     #self.bn = nn.BatchNorm1d(sdim_h, affine=False)
                 def forward(self, o, a):
-                    #batch_size = o.size()[0]
                     o = o.flatten(1)
-                 #   print("o[0]: {}".format(o[0]))
-                  #  o = self.bn(o)
-                   # print("bn o[0]: {}".format(o[0]))
                     x = torch.cat([o, a], dim = 1)
                     x = self.fc1(x)
-         #           print("fx1 x[0]: {}".format(x[0]))
                     x = self.nonlin(x)
-               #     print("out x[0]: {}".format(x[0]))
                     return x
             sdim = list(sdim)
             hldr=1
@@ -222,19 +196,6 @@ class AttentionCritic(nn.Module):
             base = MlpCritEncoder(sdim_h, adim, hidden_dim, nonlin= F.leaky_relu)
         else:
             base = PolicyBase(sdim,hidden_dim=hidden_dim, cat_end = adim)
-            # class CnnCritEncoder(PolicyBase):
-            #     def __init__(self, sdim, adim, hidden_dim):
-            #         super(CnnCritEncoder, self).__init__(sdim, hidden_dim)
-            #         self.fc1 = nn.Linear(self.flat_cnn_out_size + adim, hidden_dim)
-            #     def forward(self, obs, a):
-            #         batch_size = obs.size()[0]
-            #         x = F.leaky_relu(self.c1(obs))
-            #         x = F.leaky_relu(self.c2(x))
-            #         x = x.reshape(batch_size, -1)
-            #         x2 = torch.cat([x,a], dim = 1)
-            #         x2 = F.leaky_relu(self.fc1(x2))
-            #         return x2
-            # base = CnnCritEncoder(sdim, adim, hidden_dim)
         return base
 
     def make_state_encoder(self, sdim,hidden_dim):

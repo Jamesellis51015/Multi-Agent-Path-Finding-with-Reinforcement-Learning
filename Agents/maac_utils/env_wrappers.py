@@ -5,8 +5,6 @@ import numpy as np
 from multiprocessing import Process, Pipe
 from Agents.maac_utils.vec_env import VecEnv, CloudpickleWrapper
 
-
-
 def worker(remote, parent_remote, env_fn_wrapper):
     parent_remote.close()
     env = env_fn_wrapper.x()
@@ -14,12 +12,8 @@ def worker(remote, parent_remote, env_fn_wrapper):
         cmd, data = remote.recv()
         if cmd == 'step':
             ob, reward, done, info = env.step(data)
-            #print("Dones {}   Data {}".format(done, data))
-            # try:
             if all(done.values()):
                 ob = env.reset()
-            # except:
-              
             remote.send((ob, reward, done, info))
         elif cmd == 'reset':
             ob = env.reset()
@@ -27,20 +21,11 @@ def worker(remote, parent_remote, env_fn_wrapper):
         elif cmd == 'render':
             r = env.render()
             remote.send(r)
-        # elif cmd == 'reset_task':
-        #     ob = env.reset_task()
-        #     remote.send(ob)
         elif cmd == 'close':
             remote.close()
             break
         elif cmd == 'get_spaces':
             remote.send([env.observation_space, env.action_space])
-        # elif cmd == 'get_agent_types':
-        #     if all([hasattr(a, 'adversary') for a in env.agents]):
-        #         remote.send(['adversary' if a.adversary else 'agent' for a in
-        #                      env.agents])
-        #     else:
-        #         remote.send(['agent' for _ in env.agents])
         else:
             raise NotImplementedError
 
@@ -64,14 +49,6 @@ class SubprocVecEnv(VecEnv):
 
         self.remotes[0].send(('get_spaces', None))
         observation_space, action_space = self.remotes[0].recv()
-        # for r in self.remotes: r.send(('get_spaces', None))
-        # hldr = [r.recv() for r in self.remotes]
-        # print(hldr)
-        # (observation_space, action_space) = zip(*hldr)
-        # print(observation_space)
-        # print(action_space)
-        #self.remotes[0].send(('get_agent_types', None))
-        #self.agent_types = self.remotes[0].recv()
         VecEnv.__init__(self, len(env_fns), observation_space, action_space)
 
     def step_async(self, actions):
@@ -121,11 +98,6 @@ class DummyVecEnv(VecEnv):
         self.envs = [fn() for fn in env_fns]
         env = self.envs[0]        
         VecEnv.__init__(self, len(env_fns), env.observation_space, env.action_space)
-        # if all([hasattr(a, 'adversary') for a in env.agents]):
-        #     self.agent_types = ['adversary' if a.adversary else 'agent' for a in
-        #                         env.agents]
-        # else:
-        #     self.agent_types = ['agent' for _ in env.agents]
         self.ts = np.zeros(len(self.envs), dtype='int')        
         self.actions = None
 
@@ -135,11 +107,6 @@ class DummyVecEnv(VecEnv):
     def step_wait(self):
         results = [env.step(a) for (a,env) in zip(self.actions, self.envs)]
         obs, rews, dones, infos = zip(*results)#map(np.array, zip(*results))
-        # self.ts += 1
-        # for (i, done) in enumerate(dones):
-        #     if all(done): 
-        #         obs[i] = self.envs[i].reset()
-        #         self.ts[i] = 0
         self.actions = None
         return obs, rews, dones, infos #np.array(obs), np.array(rews), np.array(dones), infos
 
