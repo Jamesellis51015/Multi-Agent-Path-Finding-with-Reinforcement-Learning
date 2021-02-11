@@ -22,7 +22,7 @@ conda activate gridworld
 ## Manually contol an agent on a gridworld:
 Run gridworld_manual.py with arguments for the map size [x=y=map_shape], the number of agents and obstacle density:
 
-python gridworld_manual --map_shape 10 --n_agents 1 --obj_density 0.2
+python gridworld_manual.py --map_shape 10 --n_agents 1 --obj_density 0.2
 
 To see a command-line printout of the observations add --verbose
 
