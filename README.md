@@ -5,7 +5,7 @@
 
 ![Alt text](gridworld_example.png?raw=true "")
 
-- ### PPO code in Agents/PPO folder and Agents/PPO.py.
+- ### PPO code in Agents/PPO folder and Agents/PPO_IL.py.
 
 - ### MAAC code in Agents/MAAC.py and Agents/maac_utils/
 
