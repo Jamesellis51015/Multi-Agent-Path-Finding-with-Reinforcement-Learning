@@ -22,7 +22,7 @@ def run_gridworld():
         parser.add_argument("--n_agents", default = 1, type=int)
         parser.add_argument("--verbose", default = False, action='store_true', help='Prints the observations.')
         parser.add_argument("--use_default_rewards", default=True, type=bool)
-        parser.add_argument("--obj_density", default = 0.2, type=int)
+        parser.add_argument("--obj_density", default = 0.2, type=float)
         parser.add_argument("--view_d", default = 3, type=int)
         parser.add_argument("--ppo_recurrent", default= False, action='store_true')
         parser.add_argument("--ppo_heur_block", default= False, action='store_true')
@@ -118,7 +118,6 @@ def run_gridworld():
                     print("Rewards: ", rewards)
                     print("Dones: ", dones)
                     print("Collisions: ", info["step_collisions"])
-                    print("info: {}".format(info))
                 else:
                     agent_id = int(cmds[i])
                     action = int(cmds[i + 1])

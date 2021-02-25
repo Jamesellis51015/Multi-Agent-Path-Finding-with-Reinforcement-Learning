@@ -1,5 +1,5 @@
 
-# Some code/ideas from:
+# Some code from:
 
 #@misc{gym_minigrid,
 #  author = {Chevalier-Boisvert, Maxime and Willems, Lucas and Pal, Suman},
@@ -83,12 +83,6 @@ COLORS = {
       40: np.array([139,0,139])
 
 }
-# AGENT_COLOURS = {
-#   0: np.array([255, 0, 0]),
-#   1: np.array([0, 0, 255]),
-#   2: np.array([255, 255, 0]),
-#   3: np.array([51, 255, 255]),
-# }
 
 IDX_TO_OBJECT = dict(zip(OBJECT_TO_IDX.values(), OBJECT_TO_IDX.keys()))
 
@@ -155,8 +149,6 @@ class Goal(Empty):
                 self.color = self.goal_id
             elif self.goal_id > 40:
                 self.color = self.goal_id % 40
-                # i = self.goal_id
-                # custom = np.array([255/(i-1), 255/(i-2), 255/(i-3)])
             else:
                 raise Exception("ID not in range")
         self._set_color(r, custom=custom)
@@ -183,31 +175,19 @@ class Agent(Empty):
                 self.color = self.id
             elif self.id > 40:
                 self.color = self.id % 40
-                # i = self.id
-                # custom = np.array([255/(i-1), 255/(i-2), 255/(i-3)])
             else:
                 raise Exception("ID not in range")
         self._set_color(r, custom=custom)
         r.drawCircle(CELL_PIXELS * 0.5, CELL_PIXELS * 0.5, (CELL_PIXELS//2)*0.7)
-       # print(self.id)
-        # if self.id != None:
-        #     i = str(self.id)
-        #     self.color = 'red'
-        #     self._set_color(r)
-        #     r.drawText(CELL_PIXELS * 0.4, CELL_PIXELS * 0.7, i)
-        #     self.color = 'blue'
 
 class Grid():
     def __init__(self, x_len, y_len):
         self.x_len = x_len #number of rows
         self.y_len = y_len #number of columns
-        #self.grid = [[None] for _ in range(self.x_len * self.y_len)] 
         self.grid = np.empty((x_len, y_len), dtype=object)
-
-       # print("Env  np   {};    ".format(np.random.normal()))
         
     def get(self, x, y):
-        return self.grid[x,y]#self.grid[y*self.y_len + x]
+        return self.grid[x,y]
         
     def render_grid(self, r, tile_size):
         """
@@ -215,7 +195,6 @@ class Grid():
         :param r: target renderer object
         :param tile_size: tile size in pixels
         """
-
         assert r.width == self.y_len * tile_size
         assert r.height == self.x_len * tile_size
 
@@ -225,8 +204,6 @@ class Grid():
 
         r.push()
 
-        # Internally, we draw at the "large" full-grid resolution, but we
-        # use the renderer to scale back to the desired size
         r.scale(tile_size / CELL_PIXELS, tile_size / CELL_PIXELS)
 
         # Draw the background of the in-world cells black
@@ -239,7 +216,6 @@ class Grid():
         )
 
         # Draw grid lines
-        #r.setLineColor(100, 100, 100)
         r.setLineColor(0, 0, 0)
         for rowIdx in range(0, self.x_len):
             y = CELL_PIXELS * rowIdx
@@ -248,19 +224,14 @@ class Grid():
             x = CELL_PIXELS * colIdx
             r.drawLine(x, 0, x, heightPx)
 
-
-
         # Render the grid
         for j in range(0, self.x_len):
             for i in range(0, self.y_len):
-                #print(self.get(i,j))
                 cells = self.get(j, i)
                 cell_types = [c.type for c in cells]
                 if 'goal' in cell_types and 'agent' in cell_types:
                     r.push()
                     r.translate(i * CELL_PIXELS, j * CELL_PIXELS)
-                    #(Goal(i,j)).render(r)
-                    #(Agent(i,j)).render(r)
                     agnt_ind = cell_types.index('agent')
                     goal_ind = cell_types.index('goal')
                     (cells[goal_ind]).render(r)
@@ -280,13 +251,6 @@ class Grid():
 
 
 class Grid_Env(Grid):
-    # class Global_Cooperative_Rewards():
-    #     """All agents share this reward """
-    #     step= -0.01
-    #     object_collision = -0.2
-    #     agent_collision = -0.4
-    #     goal_reached= 0.0
-    #     finish_episode = 1
     def __init__(self, generator, diagonal_actions = False, fully_obs = False, view_d = 2, agent_collisions = True):
         #Get env, obstacles and agents from hand made csv file
         obj_map = generator()#genfromtxt(csv_file, delimiter=',')
@@ -299,17 +263,7 @@ class Grid_Env(Grid):
             raise Exception("Currently only support square map shapes")
         super().__init__(self.x_len, self.y_len)
         self.max_step = int(math.floor(self.x_len * self.y_len))
-        #self.max_step = 256 #int(math.floor(3*(self.x_len + self.y_len)))
-       # self.max_step = int(math.floor(3*(self.x_len + self.y_len)))
         self.step_count = 0
-        #Agents:
-        # self.agents, self.goals = self._populate_grid(obj_map)
-        # self.agents = {i:agent for i,agent in enumerate(self.agents)}
-        # for i, agnt in self.agents.items():
-        #     if agnt.id is None:
-        #         agnt.id = i 
-
-        #####
         self.agents, self.goals = self._populate_grid(obj_map)
         hldr = {}
         for i, agnt in enumerate(self.agents):
@@ -317,21 +271,11 @@ class Grid_Env(Grid):
                 agnt.id = i 
             hldr[agnt.id] = agnt
         self.agents = hldr
-        
+
         ####
         self.n_agents = len(self.agents)
-        #self.reward_function = 'navigation'
-        #self.rewards = self.Rewards()
         self.rewards = None
         self.global_cooperative_rewards = self.Global_Cooperative_Rewards()
-
-        #Goals:
-        # assert len(self.goals) == len(self.agents)
-        # goal_ids = np.random.choice(len(self.goals), len(self.goals), replace = False) #agents assigned to goals
-        # for i,g in enumerate(self.goals):
-        #     g.goal_id = goal_ids[i]
-        # self.goals = {g.goal_id : g for g in self.goals} 
-        #self.goals = None
 
         self.fully_obs = fully_obs
         self.view_d = view_d
@@ -340,7 +284,7 @@ class Grid_Env(Grid):
         self.inc_other_goals = True
         self.inc_own_goals = True
         self.inc_direction_vector = False
-        self.inc_path_grid = False #show 
+        self.inc_path_grid = False
         self.heur = None
 
         self.observation_space = None #Required to initialize manually
@@ -392,11 +336,8 @@ class Grid_Env(Grid):
             
         if self.inc_direction_vector:
             vector_obs_space = spaces.Box(low=0, high=1, shape= (2,), dtype=float)
-        #elif self.inc_path_grid:
-        #    flat_input = view_shape[1] * view_shape[0]
-        #    vector_obs_space = spaces.Box(low=0, high=1, shape= (flat_input,), dtype=float)
 
-        if self.inc_direction_vector: #or self.inc_path_grid:
+        if self.inc_direction_vector:
             return (map_obs_space, vector_obs_space)
         else:
             return map_obs_space
@@ -420,16 +361,13 @@ class Grid_Env(Grid):
                 if obj_map[x,y] == OBJECT_TO_IDX['empty']:
                     self.grid[x,y] = [Empty()]
                 elif obj_map[x,y] == OBJECT_TO_IDX['obstacle']:
-                    #self.grid[y*self.y_len + x] = [Obstacle()]
                     self.grid[x,y] = [Obstacle()]
                 elif obj_map[x,y] == OBJECT_TO_IDX['agent']:
                     obj = Agent(x,y)
                     agents.append(obj)
-                    #self.grid[y*self.y_len + x] = [obj]
                     self.grid[x,y] = [obj]
                 elif obj_map[x,y] == OBJECT_TO_IDX['goal']:
                     obj = Goal(x,y)
-                   # self.grid[y*self.y_len + x] = [obj]
                     self.grid[x,y] = [obj]
                     goals.append(obj)
                 elif obj_map[x,y][0] == 'a':
@@ -466,14 +404,10 @@ class Grid_Env(Grid):
         del self.grid[position[0], position[1]][ind]
         self.grid[position[0], position[1]].append(Empty())
 
-
-    
-
     def render(self, mode='rgb_array', close=False, tile_size=CELL_PIXELS):
         """
         Render the entire grid 
         """
-
         if close:
             if self.grid_renderer:
                 self.grid_renderer.close()
@@ -491,7 +425,6 @@ class Grid_Env(Grid):
 
         r.beginFrame()
 
-        # Render the whole grid
         self.render_grid(r, tile_size)
 
         r.endFrame()
@@ -506,7 +439,7 @@ class Grid_Env(Grid):
             assert agent_handle in range(len(self.agents))
             if type(action) == ACTIONS:
                 action = action.value
-           # print("act and space {}  {}".format(action, self.action_space[0]))
+
             assert action in range(self.action_space[0].n)
 
             (curr_x, curr_y) = self.agents[agent_handle].pos
@@ -515,7 +448,6 @@ class Grid_Env(Grid):
             if action == ACTIONS.stay.value:
                 pass
             elif action == ACTIONS.right.value:
-                #next_x += 1
                 next_y += 1
             elif action == ACTIONS.down.value:
                 next_x += 1
@@ -544,7 +476,6 @@ class Grid_Env(Grid):
         """Input: A dictionary of handle-action key value pairs 
            Output: 
         """
-
         if self.info["terminate"]:
             return self.reset()
 
@@ -583,24 +514,7 @@ class Grid_Env(Grid):
                         agnt_conflict_flag = True
                         agent_conflicts_local[handle] = True
                         agent_conflicts_global[handle] = True
-                        #conflict_handles.append(handle)
                         new_handle_acion_dict[handle] = ACTIONS.stay
-                    # #Prevent agents from moving past each other:
-                    # if agnt_next_pos[handle] in agnt_curr_pos_cpy.values():
-                    #     npos = agnt_next_pos[handle]
-                    #     this_agent = handle
-                    #     other_agent = [k for (k,v) in agnt_curr_pos_cpy.items() if v == npos]
-                    #     other_agent = other_agent[0]
-                    #     hlsr = [action_dict[this_agent] == ACTIONS.right.value and action_dict[other_agent] == ACTIONS.left.value]
-                    #     if action_dict[this_agent] == ACTIONS.left and action_dict[other_agent] == ACTIONS.right.value \
-                    #         or action_dict[this_agent] == ACTIONS.right.value and action_dict[other_agent] == ACTIONS.left.value \
-                    #         or action_dict[this_agent] == ACTIONS.up.value and action_dict[other_agent] == ACTIONS.down.value \
-                    #         or action_dict[this_agent] == ACTIONS.down.value and action_dict[other_agent] == ACTIONS.up.value:
-                    #         agnt_conflict_flag = True
-                    #         agent_conflicts_local[handle] = True
-                    #         agent_conflicts_global[handle] = True
-                    #         #conflict_handles.append(handle)
-                    #         new_handle_acion_dict[handle] = ACTIONS.stay
 
 
                 #Taking into account obstacles and grid edges
@@ -609,20 +523,17 @@ class Grid_Env(Grid):
                 if x not in range(self.y_len) or y not in range(self.x_len):
                     x, y = x_p, y_p
 
-                for cell_obj in self.grid[x,y]: #self.grid[y*self.y_len + x][-1]
+                for cell_obj in self.grid[x,y]: 
                     if agnt_conflict_flag == False and cell_obj.type != 'empty' and not cell_obj is self.agents[handle]:
                         if cell_obj.can_overlap() == False:
                             obs_collisions_local[handle] = True
                             obs_collisions_global[handle] = True
-                            #obs_collision_handles.append(handle)
                             new_handle_acion_dict[handle] = ACTIONS.stay
 
             if True in agent_conflicts_local.values() or True in obs_collisions_local.values():
                 return get_conflics(new_handle_acion_dict)
             else:
                 return new_handle_acion_dict
-
-        
         
         #Get no conflict actions for all agents
         new_actions = get_conflics(action_handles)
@@ -642,13 +553,6 @@ class Grid_Env(Grid):
             if len(self.grid[x,y]) ==0:
                 self.grid[x,y].append(Empty())
 
-
-            # if len(self.grid[x,y]) > 1:
-            #     del self.grid[x,y][-1]
-            # else:
-            #     self.grid[x,y][-1] = None
-
-            # #self.grid[y_n*self.y_len + x_n][-1] = self.agents[handle]
             self.grid[x_n, y_n].append(self.agents[handle])
             self.agents[handle].pos = (x_n, y_n)
 
@@ -672,12 +576,8 @@ class Grid_Env(Grid):
         self.info["total_steps"] = self.step_count
 
         all_rewards = [r for r in rewards.values()]
-        #self.info['total_rewards'] += sum(all_rewards)/len(all_rewards)
-        #
-        # for r in all_rewards:
-        #     self.info["total_avg_agent_r"] += r
+
         self.info["total_avg_agent_r"] += sum(all_rewards) / len(all_rewards)
-        #self.info["total_avg_agent_r"] /= len(all_rewards)
         self.info["total_ep_global_r"] += global_r 
 
         for collision in collisions["agent_col"].values():
@@ -691,8 +591,6 @@ class Grid_Env(Grid):
         else:
             self.info["all_agents_on_goal"] = 0
 
-
-        #return (obs, rewards, dones, collisions, self.info)
         self.info["step_collisions"] = collisions
         return (obs, rewards, dones, copy.deepcopy(self.info))
     
@@ -724,19 +622,15 @@ class Grid_Env(Grid):
 
         return tabulate(rows)
 
-    #Helper functions
     def _get_dir_vec(self,agent, goal):
         '''A direction normalized direction vector
             for large env where goals are outside of field of view '''
-        #v = {}
-        #for handle, agent in self.agents.items():
         (x1,y1) = agent.pos
-        (x2, y2) = goal.pos #self.goals[handle].pos
+        (x2, y2) = goal.pos 
         dx = x2 - x1
         dy = y2 - y1
 
         magnitude = math.sqrt(dx**2 + dy**2) / math.sqrt(self.x_len**2 + self.y_len**2)
-        #if dx < 0.0000001: dx = 0.0000001
         angle = math.atan2(dy,dx)/(math.pi)
         return np.array([magnitude, angle])       
 
@@ -744,7 +638,6 @@ class Grid_Env(Grid):
         raise NotImplementedError
 
     def _is_cell_type(self, view, cell = "obstacle", own_goal_only = True, agent_id = None):
-        # view_shape = view.shape
         one_hot_view = np.zeros(view.shape)
         for x in range(view.shape[0]):
             for y in range(view.shape[1]):
@@ -773,7 +666,6 @@ class Grid_Env(Grid):
                     view[d_view + x_cursor,d_view + y_cursor] = [Obstacle()]
                 else:
                     view[d_view + x_cursor,d_view + y_cursor] = self.get(x,y)
-        #view[d_view, d_view] = [Empty()] #Make own position None
         return view
 
     def _get_observations(self, d_view, fully_obs = False):
@@ -782,10 +674,6 @@ class Grid_Env(Grid):
         
         for handle, agent in self.agents.items():
             if fully_obs:
-                # top_obj_grid = np.empty(self.grid.shape, dtype = object)
-                # for x in range(self.grid.shape[0]):
-                #     for y in range(self.grid.shape[1]):
-                #         top_obj_grid[x,y] = self.grid[x,y][-1]
                 one_hot_obs = []
                 if self.inc_obstacles: one_hot_obs.append(self._is_cell_type(self.grid, cell='obstacle'))
                 if self.inc_other_agents:
@@ -794,9 +682,6 @@ class Grid_Env(Grid):
                     one_hot_obs.append(hldr)
                 if self.inc_own_goals: one_hot_obs.append(self._is_cell_type(self.grid, cell='goal', own_goal_only=True, agent_id=handle))
                 if self.inc_other_goals: one_hot_obs.append(self._is_cell_type(self.grid, cell='goal', own_goal_only=False, agent_id=handle))
-                
-                #one_hot_obs = [is_cell_type(top_obj_grid, cell = obj_type) for obj_type in grid_obj_types.keys()]
-                #one_hot_obs[1][agent.pos[0], agent.pos[1]] = 0 #Exclude own position from other agent channel
                 
                 one_hot_obs.append(np.zeros(self.grid.shape))
                 one_hot_obs[-1][agent.pos[0], agent.pos[1]] = 1 #Include a channel for agents own position.
@@ -808,22 +693,18 @@ class Grid_Env(Grid):
             else:
                 v = self._get_view(agent.pos[0], agent.pos[1], d_view)
                 one_hot_observations = []
-                #one_hot_observations = [is_cell_type(v, obj_type) for obj_type in grid_obj_types.keys()]
                 if self.inc_obstacles: one_hot_observations.append(self._is_cell_type(v, cell='obstacle'))
                 #remove self from observation
                 hldr = self._is_cell_type(v, cell='agent')
                 hldr[self.view_d, self.view_d] = 0.0
                 if self.inc_other_agents: one_hot_observations.append(hldr)
-                #if self.inc_other_agents: one_hot_observations.append(self._is_cell_type(v, cell='agent'))
                 if self.inc_own_goals: one_hot_observations.append(self._is_cell_type(v, cell='goal', own_goal_only=True, agent_id=handle))
                 if self.inc_other_goals: one_hot_observations.append(self._is_cell_type(v, cell='goal', own_goal_only=False, agent_id=handle))
-                #observations[handle] = [np.stack(one_hot_observations, 0), get_dir_vec(agent, self.goals[handle])]
                 if self.inc_direction_vector:
                     observations[handle] = (np.stack(one_hot_observations, 0), self._get_dir_vec(agent, self.goals[handle]))
                 elif self.inc_path_grid:
                     one_hot_observations.append(self._get_path_grid(agent))
                     observations[handle] = np.stack(one_hot_observations, 0)
-                    #observations[handle] = (np.stack(one_hot_observations, 0), self._get_path_grid(agent))
                 else:
                     observations[handle] = np.stack(one_hot_observations, 0)
                 #One hot obsevations contains one-hot representation of: obstacels, other agents, own goals, other agent goals                 

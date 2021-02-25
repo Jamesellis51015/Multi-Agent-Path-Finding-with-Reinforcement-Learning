@@ -1,14 +1,90 @@
 import main
 from sklearn.model_selection import ParameterGrid
 
+def ic3net_test():
+    n_iterations = str(2500)
+    experiment_group_name = "Ic3Net_Test"
+    work_dir = experiment_group_name
+    plot_dir = experiment_group_name + "_Tensorboard"
+
+    parmeter_grid1 = {
+        "seed": [1],
+        "batch_sizes": [500],
+        "entropy_coeff":[0.01],
+        "discount":[0.9],
+        #"lambda_": [1.0, 0.95,0.6],
+        "value_ceoff": [0.01],
+        "policy": ["IC3"],
+        "n_agents": [4],
+        "obj_density": [0.2],
+        "env_size": [7],
+        "recurrent": [False],
+        "base_policy_type": ["mlp"],
+        "comm_passes": [1],
+        "comm_mask_zero":[False], #If true, all communication is zero
+        "hid_size":[120],
+        "share_weights":[False],
+        "comm_action_one": [False] #Usually false for ic3; if true, then its commNet
+    }
+
+    grid1 = ParameterGrid(parmeter_grid1)
+    
+    for param in grid1:
+        args = []
+        args = ["--working_directory", work_dir, "--alternative_plot_dir", plot_dir]
+        args.extend(["--iterations", n_iterations])
+
+        name = "IC3Net_Test" + "_disc_" + str(param["discount"]) \
+            + "_entropy_" + str(param["entropy_coeff"]) \
+            + "_minibatch_" + str(param["batch_sizes"]) \
+            + "_commpasses_" + str(param["comm_passes"]) \
+            + "_commzero_" + str(param["comm_mask_zero"]) \
+            + "_commNet_" + str(param["comm_action_one"]) \
+            + "_recurrent_" + str(param["recurrent"]) \
+            + "_envsize_" + str(param["env_size"]) \
+            + "_nagents_"+ str(param["n_agents"]) \
+            + "_objdensity_"+ str(param["obj_density"]) \
+            + "_seed_"+ str(param["seed"])
+
+        args.extend(["--env_name","independent_navigation-v0"])
+        args.extend(["--n_agents", str(param["n_agents"])])
+        args.extend(["--map_shape", str(param["env_size"])])
+        args.extend(["--policy", str(param["policy"])])
+        args.extend(["--name", name])
+        args.extend(["--batch_size", str(param["batch_sizes"])])
+        args.extend(["--seed", str(param["seed"])])
+        args.extend(["--entropy_coeff", str(param["entropy_coeff"])])
+        args.extend(["--discount", str(param["discount"])])
+       # args.extend(["--lambda_", str(param["lambda_"])])
+        args.extend(["--ic3_base_policy_type", str(param["base_policy_type"])])
+        args.extend(["--comm_passes", str(param["comm_passes"])])
+        args.extend(["--hid_size", str(param["hid_size"])])
+
+        if param["share_weights"]:
+            args.extend(["--share_weights"])
+        if param["comm_mask_zero"]:
+            args.extend(["--comm_mask_zero"])
+        if param["recurrent"]:
+            args.extend(["--recurrent"])
+        if param["comm_action_one"]:
+            args.extend(["--comm_action_one"])
+
+        args.extend(["--render_rate", str(int(1e2))])
+        args.extend(["--checkpoint_frequency", str(int(5e2))])
+        args.extend(["--benchmark_frequency", str(int(3000))])
+        args.extend(["--benchmark_num_episodes", str(int(10))])
+        args.extend(["--benchmark_render_length", str(int(20))])
+        args.extend(["--obj_density", str(param["obj_density"])])
+
+        main.main(args)
+
+
 def ic3_1A1():
     n_iterations = str(2500)
-  #  experiment_group_name = "IC3"
     experiment_group_name = "Ic3_1A"
     work_dir = '/home/james/Desktop/Gridworld/EXPERIMENTS/' + experiment_group_name
     plot_dir = '/home/james/Desktop/Gridworld/CENTRAL_TENSORBOARD/' + experiment_group_name #+ "_Central"
 
- 
     parmeter_grid1 = {
         "seed": [1],
         "batch_sizes": [500],
@@ -28,30 +104,12 @@ def ic3_1A1():
         "share_weights":[False]
     }
 
-
     grid1 = ParameterGrid(parmeter_grid1)
     
     for param in grid1:
         args = []
         args = ["--working_directory", work_dir, "--alternative_plot_dir", plot_dir]
         args.extend(["--iterations", n_iterations])
-
-    #     parser.add_argument("--hid_size", default= 120, type =int)
-    # parser.add_argument("--recurrent", default= False, action = 'store_true')
-    # parser.add_argument("--detach_gap", default = 10, type = int)
-    # parser.add_argument("--comm_passes", default= 1, type =int)
-    # parser.add_argument('--share_weights', default=False, action='store_true', 
-    #                 help='Share weights for hops')
-    # #parser.add_argument("--comm_mode", default = 1, type = int,
-    # #help= "if mode == 0 -- no communication; mode==1--ic3net communication; mode ==2 -- commNet communication")
-    # parser.add_argument("--comm_mode", default = "avg", type = str, help="Average or sum the hidden states to obtain the comm vector")
-    # parser.add_argument("--hard_attn", default=True, type=bool, help="to communicate or not. If hard_attn == False, no comm")
-    # parser.add_argument("--comm_mask_zero", default=False,action='store_true', help="to communicate or not. If hard_attn == False, no comm")
-    # parser.add_argument('--comm_action_one', default=False, action='store_true',
-    #                 help='Whether to always talk, sanity check for hard attention.')
-    # parser.add_argument("--ic3_base_policy_type", default= "mlp", type =str)
-
-
         
         name = "IC3" + "_disc_" + str(param["discount"]) \
             + "_entropy_" + str(param["entropy_coeff"]) \
@@ -164,8 +222,6 @@ def ic3_1B1():
         if param["recurrent"]:
             args.extend(["--recurrent"])
 
-            
-
         args.extend(["--render_rate", str(int(1e2))])
         args.extend(["--checkpoint_frequency", str(int(5e2))])
         args.extend(["--benchmark_frequency", str(int(3000))])
@@ -177,7 +233,6 @@ def ic3_1B1():
 
 def ic3_1C1():
     n_iterations = str(2500)
-  #  experiment_group_name = "IC3"
     experiment_group_name = "Ic3_1C"
     work_dir = '/home/james/Desktop/Gridworld/EXPERIMENTS/' + experiment_group_name
     plot_dir = '/home/james/Desktop/Gridworld/CENTRAL_TENSORBOARD/' + experiment_group_name #+ "_Central"
@@ -201,7 +256,6 @@ def ic3_1C1():
         "hid_size":[120],
         "share_weights":[False],
         "comm_action_one": [True] #Usually false for ic3; if true, then its commNet
-       # "hard_attention":[False] #Usually this parameter is true. If false communication is always present (commNet)
     }
 
 
@@ -1436,12 +1490,10 @@ def ic3_1G4(): #Samity check for env
 
 def ic3_1H1():
     n_iterations = str(2500)
-  #  experiment_group_name = "IC3"
     experiment_group_name = "Ic3_1H"
     work_dir = '/home/james/Desktop/Gridworld/EXPERIMENTS/' + experiment_group_name
     plot_dir = '/home/james/Desktop/Gridworld/CENTRAL_TENSORBOARD/' + experiment_group_name #+ "_Central"
 
- 
     parmeter_grid1 = {
         "seed": [1],
         "batch_sizes": [500],
@@ -1462,7 +1514,6 @@ def ic3_1H1():
         "comm_action_one": [False] #Usually false for ic3; if true, then its commNet
        # "hard_attention":[False] #Usually this parameter is true. If false communication is always present (commNet)
     }
-
 
     grid1 = ParameterGrid(parmeter_grid1)
     

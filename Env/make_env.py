@@ -1,18 +1,5 @@
 
-
-
-
-
 def make_env(args):
-    # Important env characteristics to set:
-    # -map size
-    # -objects density
-    # -collisions
-    # -observation space
-    # -reward function 
-    # -observability (Fully or partial) and view size
-    # -
-    
     if args.env_name == 'independent_navigation-v0':
 
         from Env.env import Independent_NavigationV0
@@ -92,10 +79,6 @@ def make_env(args):
     elif args.env_name == "ind_navigation_custom-v0":
         from Env.env import Ind_Navigation_CustomV0
         env = Ind_Navigation_CustomV0(args)
-        return env
-    elif args.env_name == "test_mstar-v0":
-        from Env.env import TestMStar
-        env = TestMStar(args)
         return env
     else:
         raise NotImplementedError

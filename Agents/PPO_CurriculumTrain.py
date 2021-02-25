@@ -482,8 +482,6 @@ def bc_training_iteration(args, env_args, ppo, device, minibatch_size, n_sub_upd
 
 
 
-    
-
 
 def run(args): #Curriculum train:
     if args.ppo_use_gpu:
@@ -530,8 +528,8 @@ def run(args): #Curriculum train:
     global_iterations = 0
     up_bc = 0
     env.close()
-    primal_lr_start = 2e-5
-    primal_lr_const = 1e-3
+    #primal_lr_start = 2e-5
+    #primal_lr_const = 1e-3
     while not curr_manager.is_done:
         env_args = curr_manager.sample_env()
         buff.__init__(env_args.n_agents, args.ppo_workers, args.ppo_rollout_length, args.ppo_recurrent)#recalculates nworkers

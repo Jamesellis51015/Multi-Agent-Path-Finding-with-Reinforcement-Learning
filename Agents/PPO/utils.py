@@ -9,20 +9,17 @@ from Agents.general_utils.policy import make_base_policy
 from Agents.PPO.env_wrappers import SubprocVecEnv, DummyVecEnv
 from Env.make_env import make_env
 
-
+# This function from https://github.com/shariqiqbal2810
 def make_parallel_env(args,seed, n_rollout_threads):
     def get_env_fn(rank):
         def init_env():
             env = make_env(args)
-           # np.random.seed(seed + rank * 1000)
             return env
         return init_env
     if n_rollout_threads == 1:
         return DummyVecEnv([get_env_fn(0)])
     else:
-        #return DummyVecEnv([get_env_fn(0), get_env_fn(2)])
         return SubprocVecEnv([get_env_fn(i) for i in range(n_rollout_threads)])
-
 
 
 def make_actor_net(base_policy_type,double_obs_space = False, recurrent = False, blocking = False):
@@ -50,7 +47,6 @@ def make_actor_net(base_policy_type,double_obs_space = False, recurrent = False,
 
             if self.blocking:
                 self.fc_block_mid = nn.Linear(hidden_dim, hidden_dim)
-                #self.fc_block_out = nn.Linear(hidden_dim, 2)
                 self.fc_block_out = nn.Linear(hidden_dim, 1)
             self.optimizer = optim.Adam(self.parameters(), lr =lr)
             #self.optimizer = Nadam(self.parameters(), lr = lr)
@@ -65,11 +61,9 @@ def make_actor_net(base_policy_type,double_obs_space = False, recurrent = False,
                 x = self.nonlin(x)
             else:
                 x = self.nonlin(self.fc_mid(x))
-            #x_act = F.softmax(self.fc_out(x))
             x_act = self.fc_out(x)
             if self.blocking:
                 x_block = self.nonlin(self.fc_block_mid(x))
-                #x_block = self.fc_block_out(x_block) #softmax removed since incuded in loss f
                 x_block = F.sigmoid(self.fc_block_out(x_block)) #softmax removed since incuded in loss f
             else:
                 x_block = None
@@ -84,7 +78,7 @@ def make_actor_net(base_policy_type,double_obs_space = False, recurrent = False,
                 if not valid_act is None:
                     assert a_probs.size(0) == 1
                     non_valid = set([i for i in range(a_probs.size(-1))]) - set(valid_act)
-                    if len(non_valid) != 0: #and len(non_valid) != a_probs.size(0):
+                    if len(non_valid) != 0:
                         idx = torch.tensor(list(non_valid))
                         a_probs_new[0,idx] = 0
                 if a_probs_new.sum() == 0:
@@ -119,7 +113,6 @@ def make_value_net(base_policy_type,double_obs_space = False, recurrent = False)
                     super(Critic, self).__init__(dim1_shape,hidden_dim, nonlin= nonlin, cat_end = dim2)
             else:
                 super(Critic, self).__init__(observation_space, hidden_dim, nonlin= nonlin)
-           # super(Critic, self).__init__(observation_space, hidden_dim, nonlin= nonlin)
             self.recurrent = recurrent
             self.nonlin = nonlin
             self.fc_mid = nn.Linear(self.hidden_dim, hidden_dim)
@@ -149,7 +142,6 @@ def make_value_net(base_policy_type,double_obs_space = False, recurrent = False)
 
 
 def make_primal_net(base_policy_type, double_obs_space = False,recurrent=True, blocking = False):
-    # recurrent = True
     print("Recurrent is: {}".format(recurrent))
     BasePoliy = make_base_policy(base_policy_type,double_obs_space)
     class Actor(BasePoliy):
@@ -182,11 +174,8 @@ def make_primal_net(base_policy_type, double_obs_space = False,recurrent=True, b
             self.fc_mid1 = nn.Linear(hidden_dim, hidden_dim)
             self.fc_mid2 = nn.Linear(hidden_dim, hidden_dim)
 
-
-
             if self.blocking:
                 self.fc_block_mid = nn.Linear(hidden_dim, hidden_dim)
-                #self.fc_block_out = nn.Linear(hidden_dim, 2)
                 self.fc_block_out = nn.Linear(hidden_dim, 1)
             self.optimizer = optim.Adam(self.parameters(), lr =lr)
             #self.optimizer = Nadam(self.parameters(), lr = lr)
@@ -205,11 +194,8 @@ def make_primal_net(base_policy_type, double_obs_space = False,recurrent=True, b
                 x, cx = self.lstm(x_mid, hid_cell_state)
                 hx = x
                 hx, cx = hx.clone(), cx.clone()
-                #x = self.nonlin(x)
             else:
                 x = self.nonlin(self.fc_mid(x_mid))
-            #x_act = F.softmax(self.fc_out(x))
-            #x_act = self.fc_out(x)
             x_act = self.act_mid(x)
             x_act = self.act_out(x_act)
 
@@ -217,7 +203,6 @@ def make_primal_net(base_policy_type, double_obs_space = False,recurrent=True, b
             x_val = self.value_out(x)
             if self.blocking:
                 x_block = self.nonlin(self.fc_block_mid(x))
-                #x_block = self.fc_block_out(x_block) #softmax removed since incuded in loss f
                 x_block = F.sigmoid(self.fc_block_out(x_block)) #softmax removed since incuded in loss f
             else:
                 x_block = None
@@ -261,16 +246,11 @@ def advantages(policy,agent_id, r, v, ter_mask, dones_mask, next_obs, hc_actr_ne
     t_mask = torch.ones_like(v) 
     t_mask[ter_mask] = 0 
 
-    # if not hc_actr_next is None:
-    #     hc_actr_next = (hc_actr_next[0].cpu(), hc_actr_next[1].cpu())
-    #     hc_cr_next = (hc_cr_next[0].cpu(), hc_cr_next[1].cpu())
-
     add_vn = torch.zeros_like(v)
     select_n_obs_mask = t_mask.eq(0) * d_mask #where terminating but not done
     if not hc_actr_next is None:
         for ind, (select, nob, hc_a, hc_c) in enumerate(zip(select_n_obs_mask, next_obs, hc_actr_next, hc_cr_next)):
             if select:
-               # nob = nob.cpu()
                 hc_a = (hc_a[0].cpu(), hc_a[1].cpu()) 
                 hc_c = (hc_c[0].cpu(), hc_c[1].cpu()) 
                 (_, _, vnext, _,_,_ ) = policy.forward({agent_id:nob},{agent_id:hc_a}, {agent_id:hc_c})
@@ -278,17 +258,14 @@ def advantages(policy,agent_id, r, v, ter_mask, dones_mask, next_obs, hc_actr_ne
     else:
         for ind, (select, nob) in enumerate(zip(select_n_obs_mask, next_obs)):
             if select:
-              #  nob = nob.cpu()
                 (_, _, vnext, _,_, _ )= policy.forward({agent_id:nob})
                 add_vn[ind] = vnext[agent_id].detach()
-
     vn = v.clone()
     vn = vn.roll(-1) 
     vn = vn * t_mask
     vn = vn + add_vn
     delta = r + gamma*vn - v
     adv = []
-   # hldr = torch.zeros(1,1)
     for ind in range(batch_len-1, 0-1, -1):
         if ind == batch_len-1 or ter_mask[ind]:
             hldr = delta[ind]

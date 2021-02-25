@@ -43,8 +43,6 @@ def custom_env_batches_generator(train_env, test_env = None, validation_env = No
 def random_obstacle_generator(map_size, n_agents, obj_density = 0, obj_distribution = 'uniform'):
 
     def generator():
-       # print(" generator     np   {};  ".format(np.random.normal()))
-        #obj_map = np.zeros(map_size, dtype= str)
         obj_map = np.full(map_size, '0', dtype=str)
         if obj_distribution == 'uniform':
             obj_ind =  np.arange(map_size[0]*map_size[1]).reshape(map_size)

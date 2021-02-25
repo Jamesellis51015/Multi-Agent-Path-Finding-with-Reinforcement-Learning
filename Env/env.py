@@ -13,8 +13,6 @@ from Env.grid_env import Grid_Env
 from Env.env_entitiy_generator import random_obstacle_generator, csv_generator
 from utils.pathfinding import Heuristics
 
-
-
 class Narrow_CorridorV0(Grid_Env):
     class Rewards():
         step= -0.01
@@ -31,7 +29,6 @@ class Narrow_CorridorV0(Grid_Env):
         finish_episode = 1
     def __init__(self, args, ind = None):
         import __main__
-       # raise Exception("get_rewads() has not been changed to return isdone instead of overall_dones")
         curr_dir = os.path.dirname(__file__)
         env_folder = curr_dir + r"/custom/narrowCorridor/"
         all_files = listdir(env_folder)
@@ -42,20 +39,12 @@ class Narrow_CorridorV0(Grid_Env):
             env_file = join(env_folder, all_files[env_ind])
         else:
             env_file = join(env_folder, all_files[ind])
-        #env_file = '/home/desktop123/Documents/Academics/Code/Multiagent_Gridworld/Env/custom/narrowCorridor1.csv'
         self.name = "narrow_corridoorEnv"
         self.args = args
         generator =  csv_generator(env_file)
-        #generator2 = random_obstacle_generator((7,7), 2, obj_density = args.obj_density)
-        #print("from csv: {}".format(g))
-        #print("from random obs gen: {}".format(generator2()))
-        #time.sleep(1000)
         super(). __init__(generator, diagonal_actions = False, fully_obs = True, view_d = 2, agent_collisions = True)
         #Goals:
         assert len(self.goals) == len(self.agents)
-        #goal_ids = np.random.choice(len(self.goals), len(self.goals), replace = False) #agents assigned to goals
-        #for i,g in enumerate(self.goals):
-        #    g.goal_id = goal_ids[i]
         self.goals = {g.goal_id : g for g in self.goals}
 
         #Set reward function, obsevation space etc
@@ -67,7 +56,7 @@ class Narrow_CorridorV0(Grid_Env):
         self.heur = Heuristics(self.grid, self)
     def reset(self, env_ind = None):
         self.__init__(self.args, ind=env_ind)
-        (obs, rewards, dones, info) = self.step({h:0 for h in self.agents.keys()})
+        (obs, _, _, _) = self.step({h:0 for h in self.agents.keys()})
         return obs
 
     def get_rewards(self, collisions):
@@ -103,13 +92,12 @@ class Narrow_CorridorV0(Grid_Env):
         r = {i:0 for i, a in self.agents.items()}
         return r
 
-
 class Ind_Navigation_CustomV0(Grid_Env):
     class Rewards():
         step= -0.1
-        object_collision = -0.02#-0.1
+        object_collision = -0.02
         agent_collision = -0.2
-        goal_reached= 0.3#0.01
+        goal_reached= 0.3
         finish_episode = 2.0
     class Global_Cooperative_Rewards():
         """All agents share this reward """
@@ -120,7 +108,6 @@ class Ind_Navigation_CustomV0(Grid_Env):
         finish_episode = 2
     def __init__(self, args):
         import __main__
-       # raise Exception("get_rewads() has not been changed to return isdone instead of overall_dones")
         curr_dir = os.path.dirname(__file__)
         env_folder = curr_dir + r"/custom/agents4/"
         all_files = listdir(env_folder)
@@ -136,20 +123,12 @@ class Ind_Navigation_CustomV0(Grid_Env):
             env_file = join(env_folder, all_files[env_ind])
         else:
             env_file = join(env_folder, all_files[ind])
-        #env_file = '/home/desktop123/Documents/Academics/Code/Multiagent_Gridworld/Env/custom/narrowCorridor1.csv'
         self.name = "ind_navigation-v0"
         self.args = args
         generator =  csv_generator(env_file)
-        #generator2 = random_obstacle_generator((7,7), 2, obj_density = args.obj_density)
-        #print("from csv: {}".format(g))
-        #print("from random obs gen: {}".format(generator2()))
-        #time.sleep(1000)
         super(). __init__(generator, diagonal_actions = False, fully_obs = True, view_d = 2, agent_collisions = True)
         #Goals:
         assert len(self.goals) == len(self.agents)
-        #goal_ids = np.random.choice(len(self.goals), len(self.goals), replace = False) #agents assigned to goals
-        #for i,g in enumerate(self.goals):
-        #    g.goal_id = goal_ids[i]
         self.goals = {g.goal_id : g for g in self.goals}
 
         if self.args.use_custom_rewards:
@@ -180,7 +159,7 @@ class Ind_Navigation_CustomV0(Grid_Env):
         self.heur = Heuristics(self.grid, self)
     def reset(self, env_ind = None):
         self.__init__(self.args)
-        (obs, rewards, dones, info) = self.step({h:0 for h in self.agents.keys()})
+        (obs, _, _, _) = self.step({h:0 for h in self.agents.keys()})
         return obs
 
     def get_rewards(self, collisions):
@@ -219,27 +198,12 @@ class Ind_Navigation_CustomV0(Grid_Env):
 
 
 class Independent_NavigationV0(Grid_Env):
-    # class Rewards():
-    #     step= -0.01
-    #     object_collision = -0.015#-0.1
-    #     agent_collision = -0.4
-    #     goal_reached= 0.1#0.01
-    #     finish_episode = 1
-
-    # For MAAC:
-    # class Rewards():
-    #     step= -0.1
-    #     object_collision = -0.02#-0.1
-    #     agent_collision = -0.2
-    #     goal_reached= 0.3#0.01
-    #     finish_episode = 2.0
-    
     # For PPO:
     class Rewards():
         step= -0.1
-        object_collision = -0.4#-0.1
+        object_collision = -0.4
         agent_collision = -0.4
-        goal_reached= 0.3 #0.01
+        goal_reached= 0.3 
         finish_episode = 2.0
         block = -1.0
 
@@ -254,8 +218,6 @@ class Independent_NavigationV0(Grid_Env):
         block = -1.0
 
     def __init__(self, args):
-        #Make default env arguments if not exist in args
-        #initialize base Grid_Env
         self.description = "Agents have to reach their own goal whilst \
             avoiding collisions with other agents"
         self.args =  args
@@ -272,13 +234,10 @@ class Independent_NavigationV0(Grid_Env):
             val.goal_id = key
 
         self.heur_block = args.ppo_heur_block
-        #self.heur_valid_act = args.ppo_heur_valid_act
         self.graph = Heuristics(self.grid, self)
         
         
         self.clear_paths()
-        #print("Not checking if path exists")
-        #Set reward function, obsevation space etc
         self.rewards = self.Rewards()
 
         if self.args.use_custom_rewards:
@@ -294,13 +253,6 @@ class Independent_NavigationV0(Grid_Env):
                 self.rewards.finish_episode = self.args.finish_episode_r
             if self.args.block_r != -10:
                 self.rewards.block = self.args.block_r
-        
-        # if args.use_custom_rewards == True:
-        #     self.rewards.step = args.reward_step
-        #     self.rewards.object_collision = args.reward_obj_collision
-        #     self.rewards.agent_collision = args.reward_agent_collision
-        #     self.rewards.goal_reached = args.reward_goal_reached
-        #     self.rewards.finish_episode = args.reward_finish_episode
 
         #Observation settings:
         self.fully_obs = True
@@ -316,7 +268,7 @@ class Independent_NavigationV0(Grid_Env):
 
     def reset(self, env_ind = None):
         self.__init__(self.args)
-        (obs, rewards, dones, info) = self.step({h:0 for h in self.agents.keys()})
+        (obs, _, _, _) = self.step({h:0 for h in self.agents.keys()})
         return obs
     
     def step(self, action_dict):
@@ -381,13 +333,12 @@ class Independent_NavigationV0(Grid_Env):
         r = {i:0 for i, a in self.agents.items()}
         return r
        
-
 class Independent_NavigationV1(Grid_Env):
     class Rewards():
         step= -0.01
-        object_collision = -0.015#-0.1
+        object_collision = -0.015
         agent_collision = -0.4
-        goal_reached= 0.1#0.01
+        goal_reached= 0.1
         finish_episode = 1
         blocking = -0.8
 
@@ -400,8 +351,6 @@ class Independent_NavigationV1(Grid_Env):
         finish_episode = 1
 
     def __init__(self, args):
-        #Make default env arguments if not exist in args
-        #initialize base Grid_Env
         self.description = "Agents have to reach their own goal whilst \
             avoiding collisions with other agents"
         self.args =  args
@@ -410,14 +359,11 @@ class Independent_NavigationV1(Grid_Env):
         
         self.heur_block = args.ppo_heur_block
         self.heur_valid_act = args.ppo_heur_valid_act
-        #self.heur_no_prev_state = args.ppo_heur_no_prev_state
         
         self.rewards = self.Rewards()
         #Goals:
         assert len(self.goals) == len(self.agents)
-        # goal_ids = np.random.choice(len(self.goals), len(self.goals), replace = False) #agents assigned to goals
-        # for i,g in enumerate(self.goals):
-        #     g.goal_id = goal_ids[i]
+
         for key, val in self.agents.items():
             val.id = key
 
@@ -429,13 +375,6 @@ class Independent_NavigationV1(Grid_Env):
         self.clear_paths()
         #Set reward function, obsevation space etc
         self.rewards = self.Rewards()
-        
-        # if args.use_custom_rewards == True:
-        #     self.rewards.step = args.reward_step
-        #     self.rewards.object_collision = args.reward_obj_collision
-        #     self.rewards.agent_collision = args.reward_agent_collision
-        #     self.rewards.goal_reached = args.reward_goal_reached
-        #     self.rewards.finish_episode = args.reward_finish_episode
 
         #Observation settings:
         self.fully_obs = False
@@ -463,9 +402,6 @@ class Independent_NavigationV1(Grid_Env):
             blocks = self.heur.get_blocking_obs(a.pos, g.pos)
             for b in blocks:
                 self._remove_object(b, "obstacle")
-            # while(len(blocks) != 0):
-            #     self._remove_object(blocks[0], "obstacle")
-            #     blocks = self.graph.get_blocking_obs(a.pos, g.pos)
             
     def step(self, action_dict):
         (obs, rewards, dones, info) = super().step(action_dict)
@@ -493,13 +429,6 @@ class Independent_NavigationV1(Grid_Env):
                 else:
                     rewards[handle] = self.rewards.step
                     isdone[handle] = False
-        # if sum(isdone.values()) == len(self.agents):
-        #     for handle in self.agents.keys(): 
-        #         rewards[handle] = self.rewards.finish_episode
-        #         overall_dones[handle] = True
-        # else:
-        #     for i, agnt in self.agents.items():
-        #         overall_dones[i] = False
 
         if collisions['obs_col']:
             for key, val in collisions['obs_col'].items():
@@ -518,14 +447,13 @@ class Independent_NavigationV1(Grid_Env):
     def get_global_cooperative_rewards(self, collisions):
         r = {i:0 for i, a in self.agents.items()}
         return r
-
 
 class Independent_NavigationV1_old(Grid_Env):
     class Rewards():
         step= -0.01
-        object_collision = -0.015#-0.1
+        object_collision = -0.015
         agent_collision = -0.4
-        goal_reached= 0.1#0.01
+        goal_reached= 0.1
         finish_episode = 1
         blocking = -0.8
 
@@ -538,8 +466,6 @@ class Independent_NavigationV1_old(Grid_Env):
         finish_episode = 1
 
     def __init__(self, args):
-        #Make default env arguments if not exist in args
-        #initialize base Grid_Env
         self.description = "Agents have to reach their own goal whilst \
             avoiding collisions with other agents"
         self.args =  args
@@ -548,14 +474,11 @@ class Independent_NavigationV1_old(Grid_Env):
         
         self.heur_block = args.ppo_heur_block
         self.heur_valid_act = args.ppo_heur_valid_act
-        #self.heur_no_prev_state = args.ppo_heur_no_prev_state
         
         self.rewards = self.Rewards()
         #Goals:
         assert len(self.goals) == len(self.agents)
-        # goal_ids = np.random.choice(len(self.goals), len(self.goals), replace = False) #agents assigned to goals
-        # for i,g in enumerate(self.goals):
-        #     g.goal_id = goal_ids[i]
+
         for key, val in self.agents.items():
             val.id = key
 
@@ -567,13 +490,6 @@ class Independent_NavigationV1_old(Grid_Env):
         self.clear_paths()
         #Set reward function, obsevation space etc
         self.rewards = self.Rewards()
-        
-        # if args.use_custom_rewards == True:
-        #     self.rewards.step = args.reward_step
-        #     self.rewards.object_collision = args.reward_obj_collision
-        #     self.rewards.agent_collision = args.reward_agent_collision
-        #     self.rewards.goal_reached = args.reward_goal_reached
-        #     self.rewards.finish_episode = args.reward_finish_episode
 
         #Observation settings:
         self.fully_obs = False
@@ -601,9 +517,6 @@ class Independent_NavigationV1_old(Grid_Env):
             blocks = self.heur.get_blocking_obs(a.pos, g.pos)
             for b in blocks:
                 self._remove_object(b, "obstacle")
-            # while(len(blocks) != 0):
-            #     self._remove_object(blocks[0], "obstacle")
-            #     blocks = self.graph.get_blocking_obs(a.pos, g.pos)
             
     def step(self, action_dict):
         (obs, rewards, dones, info) = super().step(action_dict)
@@ -631,13 +544,6 @@ class Independent_NavigationV1_old(Grid_Env):
                 else:
                     rewards[handle] = self.rewards.step
                     isdone[handle] = False
-        # if sum(isdone.values()) == len(self.agents):
-        #     for handle in self.agents.keys(): 
-        #         rewards[handle] = self.rewards.finish_episode
-        #         overall_dones[handle] = True
-        # else:
-        #     for i, agnt in self.agents.items():
-        #         overall_dones[i] = False
 
         if collisions['obs_col']:
             for key, val in collisions['obs_col'].items():
@@ -658,13 +564,12 @@ class Independent_NavigationV1_old(Grid_Env):
         r = {i:0 for i, a in self.agents.items()}
         return r
 
-
 class Independent_NavigationV2(Grid_Env):
     class Rewards():
         step= -0.01
-        object_collision = -0.015#-0.1
+        object_collision = -0.015
         agent_collision = -0.4
-        goal_reached= 0.1#0.01
+        goal_reached= 0.1
         finish_episode = 1
         blocking = -0.8
 
@@ -677,8 +582,6 @@ class Independent_NavigationV2(Grid_Env):
         finish_episode = 1
 
     def __init__(self, args):
-        #Make default env arguments if not exist in args
-        #initialize base Grid_Env
         self.description = "Agents have to reach their own goal whilst \
             avoiding collisions with other agents"
         self.args =  args
@@ -687,14 +590,9 @@ class Independent_NavigationV2(Grid_Env):
         
         self.heur_block = args.ppo_heur_block
         self.heur_valid_act = args.ppo_heur_valid_act
-        #self.heur_no_prev_state = args.ppo_heur_no_prev_state
-        
         self.rewards = self.Rewards()
-        #Goals:
         assert len(self.goals) == len(self.agents)
-        # goal_ids = np.random.choice(len(self.goals), len(self.goals), replace = False) #agents assigned to goals
-        # for i,g in enumerate(self.goals):
-        #     g.goal_id = goal_ids[i]
+
         for key, val in self.agents.items():
             val.id = key
 
@@ -706,13 +604,6 @@ class Independent_NavigationV2(Grid_Env):
         self.clear_paths()
         #Set reward function, obsevation space etc
         self.rewards = self.Rewards()
-        
-        # if args.use_custom_rewards == True:
-        #     self.rewards.step = args.reward_step
-        #     self.rewards.object_collision = args.reward_obj_collision
-        #     self.rewards.agent_collision = args.reward_agent_collision
-        #     self.rewards.goal_reached = args.reward_goal_reached
-        #     self.rewards.finish_episode = args.reward_finish_episode
 
         #Observation settings:
         self.fully_obs = False
@@ -743,14 +634,9 @@ class Independent_NavigationV2(Grid_Env):
             agnt_goal_id = agnt.id
             goal = self.goals[agnt_goal_id]
             assert goal.goal_id == agnt_goal_id
-            self.path_grid[agent_id] = self.heur.dijkstra_search(goal.pos, agnt.pos)
+            self.path_grid[agent_id] = self.heur.BFS(goal.pos, agnt.pos)
 
     def _get_path_grid(self, agent):
-        # end_pos = agent.pos
-        # goal_id = agent.id
-        # goal = self.goals[goal_id]
-        # assert goal.goal_id == goal_id
-        # start_pos = goal.pos
         OBSTACLE_VALUE = 1.0
         d_view = self.view_d
         view_dim =  2*d_view + 1
@@ -777,9 +663,7 @@ class Independent_NavigationV2(Grid_Env):
                             view[d_view + x_cursor,d_view + y_cursor] = cost_to_go
                         else:
                             view[d_view + x_cursor,d_view + y_cursor] = -1.0
-                            #print("agent {}  pos {}".format(agent.id, pos))
-        #hldr = view.flatten()
-        #return view.flatten().astype(np.float32)
+
         return view.astype(np.float32)
 
 
@@ -874,9 +758,9 @@ class Cooperative_Navigation_V0(Grid_Env):
         -agents are spawned randomly anywhere """
     class Rewards():
         step= -0.01
-        object_collision = -0.015#-0.1
+        object_collision = -0.015
         agent_collision = -0.4
-        goal_reached= 0.1#0.01
+        goal_reached= 0.1
         finish_episode = 1
 
     class Global_Cooperative_Rewards():
@@ -888,9 +772,6 @@ class Cooperative_Navigation_V0(Grid_Env):
         finish_episode = 1
 
     def __init__(self, args):
-        #Make default env arguments if not exist in args
-        #initialize base Grid_Env
-       # raise Exception("get_rewads() has not been changed to return isdone instead of overall_dones")
         self.description = "Agents have cover a number of landmarks (goals) equal" + \
             " to the number of agents whilst avoiding collisions. It" + \
             "does not matter which agent covers which landmark. No obstacles"
@@ -900,14 +781,9 @@ class Cooperative_Navigation_V0(Grid_Env):
         self.rewards = self.Rewards()
         #Goals:
         assert len(self.goals) == len(self.agents)
-        # goal_ids = np.random.choice(len(self.goals), len(self.goals), replace = False) #agents assigned to goals
-        # for i,g in enumerate(self.goals):
-        #     g.goal_id = goal_ids[i]
         self.goals = {i : g for i,g in enumerate(self.goals)}
-
         self.graph = Heuristics(self.grid,self)
         self.clear_paths()
-        #Set reward function, obsevation space etc
         self.rewards = self.Rewards()
 
         if self.args.use_custom_rewards:
@@ -921,14 +797,6 @@ class Cooperative_Navigation_V0(Grid_Env):
                 self.rewards.goal_reached = self.args.goal_reached_r
             if self.args.finish_episode_r != -10:
                 self.rewards.finish_episode = self.args.finish_episode_r
-            
-        
-        # if args.use_custom_rewards == True:
-        #     self.rewards.step = args.reward_step
-        #     self.rewards.object_collision = args.reward_obj_collision
-        #     self.rewards.agent_collision = args.reward_agent_collision
-        #     self.rewards.goal_reached = args.reward_goal_reached
-        #     self.rewards.finish_episode = args.reward_finish_episode
 
         #Observation settings:
         self.fully_obs = True
@@ -943,8 +811,7 @@ class Cooperative_Navigation_V0(Grid_Env):
 
     def reset(self, custom_env = None):
         self.__init__(self.args)
-        (obs, rewards, dones, info) = self.step({h:0 for h in self.agents.keys()})
-        #return (obs, rewards, dones, collisions, info)
+        (obs, _, _, _) = self.step({h:0 for h in self.agents.keys()})
         return obs
 
     def clear_paths(self, any_goal = True):
@@ -975,8 +842,6 @@ class Cooperative_Navigation_V0(Grid_Env):
         for agent_id, agent in self.agents.items():
             if agent.pos in goal_positions:
                 rewards[agent_id] += self.rewards.goal_reached
-           # else:
-           #     rewards[agent_id] = self.rewards.step
 
         agent_positions = [a.pos for a in self.agents.values()]
 
@@ -1042,11 +907,11 @@ class Cooperative_Navigation_V1(Cooperative_Navigation_V0):
 # 
 
 class Independent_NavigationV4_1(Independent_NavigationV0):
-    class Rewards(): #For this Env this is global rewards
+    class Rewards(): 
         step= -0.01
-        object_collision = -0.015#-0.1
+        object_collision = -0.015
         agent_collision = -0.0
-        goal_reached= 0.0#0.01
+        goal_reached= 0.0
         finish_episode = 1
 
     def __init__(self, args):
@@ -1063,16 +928,13 @@ class Independent_NavigationV4_1(Independent_NavigationV0):
             for g in self.goals.values():
                 if g.pos == agent.pos and g.goal_id == agent.id:
                     global_step_reward += self.rewards.goal_reached
-                    #rewards[handle] = self.rewards.goal_reached
                     isdone[handle] = True
                     break
                 else:
-                   # rewards[handle] = self.rewards.step
                     isdone[handle] = False
         if sum(isdone.values()) == len(self.agents):
             global_step_reward += self.rewards.finish_episode
             for handle in self.agents.keys(): 
-               # rewards[handle] = self.rewards.finish_episode
                 overall_dones[handle] = True
         else:
             for i, agnt in self.agents.items():
@@ -1081,24 +943,20 @@ class Independent_NavigationV4_1(Independent_NavigationV0):
         if collisions['obs_col']:
             for key, val in collisions['obs_col'].items():
                 if val: global_step_reward += self.rewards.object_collision
-                #if val: rewards[key] += self.rewards.object_collision
         if collisions['agent_col']:
             for key, val in collisions['agent_col'].items():
                 if val: global_step_reward += self.rewards.agent_collision
-                #if val: rewards[key] += self.rewards.agent_collision
         for handle, agent in self.agents.items():
             rewards[handle] = global_step_reward
         return isdone, rewards
 
-
-
 class Independent_NavigationV4_2(Independent_NavigationV4_1):
     '''A partially observable version of Independent navigation V0. Agents do not see other agent positions. '''
-    class Rewards(): #For this Env this is global rewards
+    class Rewards(): 
         step= -0.01
-        object_collision = 0.0 #-0.015#-0.1  #Changed to 0.0
+        object_collision = 0.0 
         agent_collision = -0.4
-        goal_reached= 0.0#0.01
+        goal_reached= 0.0
         finish_episode = 1
 
     def __init__(self, args):
@@ -1107,9 +965,9 @@ class Independent_NavigationV4_2(Independent_NavigationV4_1):
 
 class Independent_NavigationV4_3(Independent_NavigationV4_1):
     '''A partially observable version of Independent navigation V0. Agents do not see other agent positions. '''
-    class Rewards(): #For this Env this is global rewards
+    class Rewards(): 
         step= -0.01
-        object_collision = -0.015#-0.1
+        object_collision = -0.015
         agent_collision = -0.4
         goal_reached= -0.01
         finish_episode = 1
@@ -1118,14 +976,13 @@ class Independent_NavigationV4_3(Independent_NavigationV4_1):
         super().__init__(args)
         self.rewards = self.Rewards()
 
-
 class Independent_NavigationV5_1(Independent_NavigationV4_1):
     ''' Single shared reward no penalties'''
-    class Rewards(): #For this Env this is global rewards
+    class Rewards(): 
         step= -0.1
-        object_collision = 0.0 #-0.015#-0.1  #Changed to 0.0
-        agent_collision = 0.0 #-0.4
-        goal_reached= 0.0#0.01
+        object_collision = 0.0 
+        agent_collision = 0.0 
+        goal_reached= 0.0
         finish_episode = 2
 
     def __init__(self, args):
@@ -1134,7 +991,7 @@ class Independent_NavigationV5_1(Independent_NavigationV4_1):
 
 class Independent_NavigationV5_2(Independent_NavigationV4_1):
     ''' Single shared reward with penalties'''
-    class Rewards(): #For this Env this is global rewards
+    class Rewards():
         step= -0.1
         object_collision = -0.05 
         agent_collision = -0.4
@@ -1147,9 +1004,9 @@ class Independent_NavigationV5_2(Independent_NavigationV4_1):
 
 class Independent_NavigationV6_1(Independent_NavigationV0):
     ''' Increasing reward for each agent reaching goal'''
-    class Rewards(): #For this Env this is global rewards
+    class Rewards(): 
         step= -0.2
-        object_collision = -0.05 #-0.015#-0.1  #Changed to 0.0
+        object_collision = -0.05
         agent_collision = -0.4
         goal_reached= 0.05
         finish_episode = 0.0
@@ -1161,47 +1018,32 @@ class Independent_NavigationV6_1(Independent_NavigationV0):
     def get_rewards(self, collisions):
         rewards = {}
         isdone = {}
-        overall_dones = {}
         global_step_reward = self.rewards.step * len(self.agents)
 
         for handle, agent in self.agents.items():
             for g in self.goals.values():
                 if g.pos == agent.pos and g.goal_id == agent.id:
-                    #global_step_reward += self.rewards.goal_reached
-                    #rewards[handle] = self.rewards.goal_reached
                     isdone[handle] = True
                     break
                 else:
-                   # rewards[handle] = self.rewards.step
                     isdone[handle] = False
         n_agents_on_goal = sum(isdone.values())
         global_step_reward += (n_agents_on_goal**2.5) * self.rewards.goal_reached
-        # if sum(isdone.values()) == len(self.agents):
-        #     global_step_reward += self.rewards.finish_episode
-        #     for handle in self.agents.keys(): 
-        #        # rewards[handle] = self.rewards.finish_episode
-        #         overall_dones[handle] = True
-        # else:
-        #     for i, agnt in self.agents.items():
-        #         overall_dones[i] = False
 
         if collisions['obs_col']:
             for key, val in collisions['obs_col'].items():
                 if val: global_step_reward += self.rewards.object_collision
-                #if val: rewards[key] += self.rewards.object_collision
         if collisions['agent_col']:
             for key, val in collisions['agent_col'].items():
                 if val: global_step_reward += self.rewards.agent_collision
-                #if val: rewards[key] += self.rewards.agent_collision
         for handle, agent in self.agents.items():
             rewards[handle] = global_step_reward
         return isdone, rewards
 
-
 class Independent_NavigationV7_1(Independent_NavigationV0):
-    class Rewards(): #For this Env this is global rewards
+    class Rewards(): 
         step= -0.2
-        object_collision = -0.4 #-0.015#-0.1  #Changed to 0.0
+        object_collision = -0.4 
         agent_collision = -0.4
         goal_reached= 0.05
         finish_episode = 0.0
@@ -1213,38 +1055,24 @@ class Independent_NavigationV7_1(Independent_NavigationV0):
     def get_rewards(self, collisions):
         rewards = {}
         isdone = {}
-        overall_dones = {}
         global_step_reward = self.rewards.step * len(self.agents)
 
         for handle, agent in self.agents.items():
             rewards[handle] = 0
             for g in self.goals.values():
                 if g.pos == agent.pos and g.goal_id == agent.id:
-                    #rewards[handle] += self.rewards.goal_reached
-                    #rewards[handle] = self.rewards.goal_reached
                     isdone[handle] = True
                     break
                 else:
-                    #rewards[handle] = self.rewards.step
                     isdone[handle] = False
         n_agents_on_goal = sum(isdone.values())
         global_step_reward += (n_agents_on_goal**2.5) * self.rewards.goal_reached
-        # if sum(isdone.values()) == len(self.agents):
-        #     global_step_reward += self.rewards.finish_episode
-        #     for handle in self.agents.keys(): 
-        #        # rewards[handle] = self.rewards.finish_episode
-        #         overall_dones[handle] = True
-        # else:
-        #     for i, agnt in self.agents.items():
-        #         overall_dones[i] = False
 
         if collisions['obs_col']:
             for key, val in collisions['obs_col'].items():
-                #if val: global_step_reward += self.rewards.object_collision
                 if val: rewards[key] += self.rewards.object_collision
         if collisions['agent_col']:
             for key, val in collisions['agent_col'].items():
-                #if val: global_step_reward += self.rewards.agent_collision
                 if val: rewards[key] += self.rewards.agent_collision
         for handle, agent in self.agents.items():
             rewards[handle] += global_step_reward
@@ -1254,7 +1082,6 @@ class Independent_NavigationV7_1(Independent_NavigationV0):
 ##############################################################
 #####   PO Observation spaces
 ##############################################################
-
 
 class Independent_NavigationV8_0(Independent_NavigationV0):
     '''This Env includes a shortest path channel in observation space '''
@@ -1270,7 +1097,6 @@ class Independent_NavigationV8_0(Independent_NavigationV0):
         self.inc_direction_vector = False
         self.inc_path_grid = True
 
-
         if self.inc_path_grid:
             self.init_path_grid()
         
@@ -1281,21 +1107,14 @@ class Independent_NavigationV8_0(Independent_NavigationV0):
         self.norm_path_len = self.x_len * self.y_len
     
     def init_path_grid(self):
-        #A dict of dict where each dict[id] = {position : Node, ...}
         self.path_grid = {}
         for agent_id, agnt in self.agents.items():
             agnt_goal_id = agnt.id
             goal = self.goals[agnt_goal_id]
             assert goal.goal_id == agnt_goal_id
-            #self.path_grid[agent_id] = self.graph.dijkstra_search(goal.pos, agnt.pos)
             self.path_grid[agent_id] = self.graph.BFS(goal.pos, agnt.pos)
 
     def _get_path_grid(self, agent):
-        # end_pos = agent.pos
-        # goal_id = agent.id
-        # goal = self.goals[goal_id]
-        # assert goal.goal_id == goal_id
-        # start_pos = goal.pos
         OBSTACLE_VALUE = 1.0
         d_view = self.view_d
         view_dim =  2*d_view + 1
@@ -1322,11 +1141,8 @@ class Independent_NavigationV8_0(Independent_NavigationV0):
                             view[d_view + x_cursor,d_view + y_cursor] = cost_to_go
                         else:
                             view[d_view + x_cursor,d_view + y_cursor] =  OBSTACLE_VALUE #-1.0
-                            #print("agent {}  pos {}".format(agent.id, pos))
-        #hldr = view.flatten()
-        #return view.flatten().astype(np.float32)
+ 
         return view.astype(np.float32)
-
 
 class Independent_NavigationV8_1(Independent_NavigationV0):
     '''This Env includes direction vector observation space '''
@@ -1359,15 +1175,9 @@ class Independent_NavigationV8_1(Independent_NavigationV0):
             agnt_goal_id = agnt.id
             goal = self.goals[agnt_goal_id]
             assert goal.goal_id == agnt_goal_id
-            # self.path_grid[agent_id] = self.graph.dijkstra_search(goal.pos, agnt.pos)
             self.path_grid[agent_id] = self.graph.BFS(goal.pos, agnt.pos)
 
     def _get_path_grid(self, agent):
-        # end_pos = agent.pos
-        # goal_id = agent.id
-        # goal = self.goals[goal_id]
-        # assert goal.goal_id == goal_id
-        # start_pos = goal.pos
         OBSTACLE_VALUE = 1.0
         d_view = self.view_d
         view_dim =  2*d_view + 1
@@ -1394,19 +1204,14 @@ class Independent_NavigationV8_1(Independent_NavigationV0):
                             view[d_view + x_cursor,d_view + y_cursor] = cost_to_go
                         else:
                             view[d_view + x_cursor,d_view + y_cursor] = -1.0
-                            #print("agent {}  pos {}".format(agent.id, pos))
-        #hldr = view.flatten()
-        #return view.flatten().astype(np.float32)
+
         return view.astype(np.float32)
-
-
 
 class Independent_NavigationV8_2(Independent_NavigationV0):
     '''Same as Independent_NavigationV8_0, but with 
     normalisation as 2*[self.x_len + self.y_len]'''
     def __init__(self, args):
         super().__init__(args)
-
         #Observation settings:
         self.fully_obs = False
         self.inc_obstacles = True
@@ -1415,7 +1220,6 @@ class Independent_NavigationV8_2(Independent_NavigationV0):
         self.inc_own_goals = True #This is only applicable to Independet Navigation tasks; In CN goals are everyones goals
         self.inc_direction_vector = False
         self.inc_path_grid = True
-
 
         if self.inc_path_grid:
             self.init_path_grid()
@@ -1427,21 +1231,14 @@ class Independent_NavigationV8_2(Independent_NavigationV0):
         self.norm_path_len = 2*(self.x_len + self.y_len)
     
     def init_path_grid(self):
-        #A dict of dict where each dict[id] = {position : Node, ...}
         self.path_grid = {}
         for agent_id, agnt in self.agents.items():
             agnt_goal_id = agnt.id
             goal = self.goals[agnt_goal_id]
             assert goal.goal_id == agnt_goal_id
-            # self.path_grid[agent_id] = self.graph.dijkstra_search(goal.pos, agnt.pos)
             self.path_grid[agent_id] = self.graph.BFS(goal.pos, agnt.pos)
 
     def _get_path_grid(self, agent):
-        # end_pos = agent.pos
-        # goal_id = agent.id
-        # goal = self.goals[goal_id]
-        # assert goal.goal_id == goal_id
-        # start_pos = goal.pos
         OBSTACLE_VALUE = 1.0
         d_view = self.view_d
         view_dim =  2*d_view + 1
@@ -1468,9 +1265,7 @@ class Independent_NavigationV8_2(Independent_NavigationV0):
                             view[d_view + x_cursor,d_view + y_cursor] = cost_to_go
                         else:
                             view[d_view + x_cursor,d_view + y_cursor] =  OBSTACLE_VALUE #-1.0
-                            #print("agent {}  pos {}".format(agent.id, pos))
-        #hldr = view.flatten()
-        #return view.flatten().astype(np.float32)
+
         return view.astype(np.float32)
 
 
@@ -1501,21 +1296,14 @@ class Independent_NavigationV8_3(Independent_NavigationV0):
         self.norm_path_len = 1*(self.x_len + self.y_len)
     
     def init_path_grid(self):
-        #A dict of dict where each dict[id] = {position : Node, ...}
         self.path_grid = {}
         for agent_id, agnt in self.agents.items():
             agnt_goal_id = agnt.id
             goal = self.goals[agnt_goal_id]
             assert goal.goal_id == agnt_goal_id
-            # self.path_grid[agent_id] = self.graph.dijkstra_search(goal.pos, agnt.pos)
             self.path_grid[agent_id] = self.graph.BFS(goal.pos, agnt.pos)
 
     def _get_path_grid(self, agent):
-        # end_pos = agent.pos
-        # goal_id = agent.id
-        # goal = self.goals[goal_id]
-        # assert goal.goal_id == goal_id
-        # start_pos = goal.pos
         OBSTACLE_VALUE = 2.0
         d_view = self.view_d
         view_dim =  2*d_view + 1
@@ -1528,12 +1316,12 @@ class Independent_NavigationV8_3(Independent_NavigationV0):
                 
                 #if out of range
                 if x >= self.x_len or x < 0 or y>= self.y_len or y < 0:
-                    view[d_view + x_cursor,d_view + y_cursor] = OBSTACLE_VALUE #-1.0
+                    view[d_view + x_cursor,d_view + y_cursor] = OBSTACLE_VALUE 
                 else:
                     cell_obj = self.get(x,y)
                     cell_types = [c.type for c in cell_obj]
                     if 'obstacle' in cell_types:
-                        view[d_view + x_cursor,d_view + y_cursor] = OBSTACLE_VALUE #-1.0
+                        view[d_view + x_cursor,d_view + y_cursor] = OBSTACLE_VALUE 
                     else:
                         pos = tuple((x, y))
                         if pos in self.path_grid[agent.id]:
@@ -1541,10 +1329,7 @@ class Independent_NavigationV8_3(Independent_NavigationV0):
                             cost_to_go = node.move_cost / self.norm_path_len
                             view[d_view + x_cursor,d_view + y_cursor] = cost_to_go
                         else:
-                            view[d_view + x_cursor,d_view + y_cursor] =  OBSTACLE_VALUE #-1.0
-                            #print("agent {}  pos {}".format(agent.id, pos))
-        #hldr = view.flatten()
-        #return view.flatten().astype(np.float32)
+                            view[d_view + x_cursor,d_view + y_cursor] =  OBSTACLE_VALUE 
         return view.astype(np.float32)
 
 

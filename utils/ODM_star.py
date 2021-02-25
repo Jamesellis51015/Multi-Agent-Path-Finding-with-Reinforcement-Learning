@@ -136,7 +136,7 @@ class Mstar_OD():
         self.inflation = inflation
     
     def search(self, OD = True, memory_limit = None):
-        open = PriorityQueue2() #SimplePriorityQ()
+        open = PriorityQueue2()
         start_v = (self.start_pos, self.start_pos)
         end_v = (self.end_pos, self.end_pos)
         vs = self.all_v.get(start_v)

@@ -11,7 +11,6 @@ import numpy as np
 
 def main(args):
     parser = argparse.ArgumentParser("Experiment parameters")
-
     #Environment:
     parser.add_argument("--map_shape", default = 5, type=int)
     parser.add_argument("--n_agents", default = 1, type=int)
@@ -28,7 +27,7 @@ def main(args):
     parser.add_argument("--custom_env_ind", default= -1, type=int)
 
     #Policy:
-    parser.add_argument("--policy", default="TEST", type =str)
+    parser.add_argument("--policy", default="PPO", type =str)
 
     #           PPO Paramares:
     parser.add_argument("--ppo_hidden_dim", default= 120, type=int)
@@ -103,7 +102,6 @@ def main(args):
     help="The number of parallel environments sampled from")
     parser.add_argument("--n_steps", default = 1, type = int, 
     help= "For AC type policies")
-    #parser.add_argument("--n_steps", default = 1, type = int, 
 
     parser.add_argument("--device", default= 'cuda', type=str)
     parser.add_argument("--iterations", default = int(3*1e6), type = int)
@@ -115,46 +113,23 @@ def main(args):
     parser.add_argument("--value_coeff", default= 0.01, type=float, help="Value function update coefficient")
     parser.add_argument("--entropy_coeff", default= 0.05, type=float, help="Entropy regularization coefficient")
     parser.add_argument("--model", default="mlp", type= str)
-    #parser.add_argument("--hidden_size", default= 250, type= int)
     parser.add_argument("--seed", default= 2, type= int)
-    #Using same convention/parameters as https://github.com/IC3Net/IC3Net:
-    # parser.add_argument('--num_epochs', default=100, type=int,
-    #                 help='number of training epochs')
-    #parser.add_argument('--iterations', default=100, type=int,
-     #   help='number of training epochs')
-    #parser.add_argument('--epoch_size', type=int, default=10,
-     #                   help='number of update iterations in an epoch')
     parser.add_argument('--batch_size', type=int, default=2000,
                         help='number of steps before each update (per thread)')
-    #End here...
 
     #Saving and rendering
-    #parser.add_argument("--working_directory", default='/home/james/Desktop/Gridworld/single_agent', type = str)
-    #parser.add_argument("--working_directory", default='/home/james/Desktop/Gridworld/single_agent', type = str)
     parser.add_argument("--working_directory", default='none', type = str)
-    #parser.add_argument("--model_path", default = '/home/james/Desktop/Gridworld/Models', type = str) #TODO: Add
-    #parser.add_argument("--render_path", default = '/home/james/Desktop/Gridworld/Render', type = str) #TODO: Add functionality to rendering.py
-    
     parser.add_argument("--mean_stats", default= 1, type = int, help="The number of iterations over which stats are averaged")
     parser.add_argument("--checkpoint_frequency", default = int(10e3), type=int)
     parser.add_argument("--print_frequency", default = int(5e1), type=int)
     parser.add_argument("--replace_checkpoints", default = True, type=bool)
     parser.add_argument("--render_rate", default= int(5e2 - 10), type=int)
     parser.add_argument("--render_length", default = 7, type= int, help="Number of episodes of rendering to save")
-    #parser.add_argument("--note", default = "NO NOTES", type= str, help="Add note to describe experiment")
     parser.add_argument("--name", default="NO_NAME", type=str, help="Experiment name")
     parser.add_argument("--alternative_plot_dir", default="none", help = "Creates a single folder to store tensorboard plots for comparison")
     parser.add_argument("--benchmark_frequency", default= int(3000), type=int, help="Frequency (iterations or episodes) with which to evalue the greedy policy.")
     parser.add_argument("--benchmark_num_episodes", default= int(500), type=int)
     parser.add_argument("--benchmark_render_length", default= int(100), type=int)
-    #parser.add_argument("--render_save_episodes", default = 30, type= int, help="The last number of episode renders to save to mp4 file")
-    #parser.add_argument("--render_after", default=500, type=int)
-
-   # parser.add_argument("--", type=str)
-
-   # cmd_args = []
-    #cmd_args.append(["--working_directory", "/home/james/Desktop/Gridworld/test1", "--alternative-plot_dir", "/home/james/Desktop/Gridworld/CENTRAL_PLOT"])
-    #for a in cmd_args:
 
     args = parser.parse_args(args)
     args.map_shape = (args.map_shape, args.map_shape)
@@ -170,7 +145,6 @@ def main(args):
 
         logger = Logger(args, env.summary(), policy.summary(), policy)
 
-        #print("Base policy type: {}".format(args.ic3_base_policy_type))
         for iteration in range(args.iterations):
             print("IC3 iteration: {} of {}".format(iteration, args.iterations))
             batch, stats, render_frames = trainer.sample_batch(render=logger.should_render())
@@ -203,7 +177,7 @@ def main(args):
         # from Agents.Ind_A2C import run_a2c
         #run_a2c(args)
     elif args.policy == 'PPO':
-        from Agents.PPO import run
+        from Agents.PPO_IL import run
         run(args)
     elif args.policy == 'CURR_PPO':
         from Agents.PPO_CurriculumTrain import run

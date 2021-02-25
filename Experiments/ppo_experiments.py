@@ -1,6 +1,211 @@
 import main
 from sklearn.model_selection import ParameterGrid
 
+
+def ppo_test():
+    '''Many agents no obstacles'''
+    n_iterations = str(3000)
+    experiment_group_name = "Test_PPO"
+    work_dir = experiment_group_name
+    plot_dir = experiment_group_name + "_Tensorboard"
+ 
+    parmeter_grid1 = {
+        "seed": [1],
+        "workers": [4],
+        "rollout_length": [256],
+        "eps_clip": [0.2],
+        "k_epochs": [8],
+        "minibatch_size": [512],
+        "entropy_coeff":[0.01],
+        "discount":[0.5],
+        "lambda_": [1.0],
+        "value_coeff": [0.5],
+        "policy": ["PPO"],
+        "n_agents": [4],
+        #"recurrent": [False],
+        "base_policy_type": ["primal7"],
+        "obj_density": [0.1],
+        "env_size": [7],
+        "step_r": [-0.1],
+        "obstacle_collision_r": [-0.4], 
+        "agent_collision_r": [-0.4], 
+        "goal_reached_r": [0.5], 
+        "finish_episode_r": [2.0]
+    
+    }
+
+    grid1 = ParameterGrid(parmeter_grid1)
+
+    for param in grid1:
+        args = []
+        args = ["--working_directory", work_dir, "--alternative_plot_dir", plot_dir]
+
+        name = "ppoTest" \
+            + "_disc_" + str(param["discount"]) \
+            + "_lambda_" + str(param["lambda_"]) \
+            + "_entropy_" + str(param["entropy_coeff"]) \
+            + "_minibatch_" + str(param["minibatch_size"]) \
+            + "_rollouts_" + str(param["rollout_length"]) \
+            + "_workers_" + str(param["workers"]) \
+            + "_kepochs_" + str(param["k_epochs"]) \
+            + "_envsize_" + str(param["env_size"]) \
+            + "_nagents_"+ str(param["n_agents"]) \
+            + "_objdensity_"+ str(param["obj_density"]) \
+            + "_seed_"+ str(param["seed"])
+
+        args.extend(["--use_custom_rewards"])
+        args.extend(["--step_r", str(param["step_r"])])
+        args.extend(["--obstacle_collision_r", str(param["obstacle_collision_r"])])
+        args.extend(["--agent_collision_r", str(param["agent_collision_r"])])
+        args.extend(["--goal_reached_r", str(param["goal_reached_r"])])
+        args.extend(["--finish_episode_r", str(param["finish_episode_r"])])
+        args.extend(["--env_name","independent_navigation-v0"])
+        args.extend(["--n_agents", str(param["n_agents"])])
+        args.extend(["--map_shape", str(param["env_size"])])
+        args.extend(["--obj_density", str(param["obj_density"])])
+        args.extend(["--policy", param["policy"]])
+        args.extend(["--name", name])
+        args.extend(["--seed", str(param["seed"])])
+        args.extend(["--render_rate", str(int(50))])
+        args.extend(["--benchmark_frequency", str(int(1000))])
+        args.extend(["--benchmark_num_episodes", str(int(100))])
+        args.extend(["--benchmark_render_length", str(int(50))])
+        args.extend(["--checkpoint_frequency", str(int(500))])
+
+        #           PPO Paramares:
+        args.extend(["--ppo_hidden_dim", str(120)])
+        args.extend(["--ppo_lr_a", str(0.001)])
+        args.extend(["--ppo_lr_v", str(0.001)])
+        args.extend(["--ppo_base_policy_type", param['base_policy_type']])
+        args.extend(["--ppo_workers", str(param['workers'])])
+        args.extend(["--ppo_rollout_length", str(param['rollout_length'])])
+        args.extend(["--ppo_share_actor"])
+        args.extend(["--ppo_share_value"])
+        args.extend(["--ppo_iterations", n_iterations])
+        args.extend(["--ppo_k_epochs", str(param['k_epochs'])])
+        args.extend(["--ppo_eps_clip", str(param["eps_clip"])])
+        args.extend(["--ppo_minibatch_size", str(param['minibatch_size'])])
+        args.extend(["--ppo_entropy_coeff", str(param['entropy_coeff'])])
+        args.extend(["--ppo_value_coeff", str(param['value_coeff'])])
+        args.extend(["--ppo_discount", str(param['discount'])])
+        args.extend(["--ppo_gae_lambda", str(param['lambda_'])])
+        # Flag for training with GPU
+        #args.extend(["--ppo_use_gpu"])
+        main.main(args)
+
+
+
+def primal_test():
+    '''Partially observable with shortest path heur'''
+    n_iterations = str(4000)
+    experiment_group_name = "Test_PRIMAL"
+    work_dir = experiment_group_name
+    plot_dir = experiment_group_name + "_Tensorboard"
+ 
+    parmeter_grid1 = {
+        "seed": [1],
+        "workers": [4],
+        "rollout_length": [256],
+        "eps_clip": [0.2],
+        "k_epochs": [8],
+        "minibatch_size": [512],
+        "entropy_coeff":[0.01],
+        "discount":[0.5], 
+        "lambda_": [1.0],
+        "value_coeff": [0.5],
+        "policy": ["CURR_PPO"],
+        "n_agents": [2],
+        "base_policy_type": ["primal9"],
+        "view_d": [4],
+        "obj_density": [0.0],
+        "env_size": [10],
+        "step_r": [-0.1],
+        "obstacle_collision_r": [-0.4], 
+        "agent_collision_r": [-0.4],
+        "goal_reached_r": [0.5],
+        "finish_episode_r": [2.0],
+        "block_r": [-2.0],
+        "recurrent": [True],
+        "blockheur": [False],
+        "validact": [True],
+        "noprevstate": [True]
+    }
+    grid1 = ParameterGrid(parmeter_grid1)
+    for param in grid1:
+        args = []
+        args = ["--working_directory", work_dir, "--alternative_plot_dir", plot_dir]
+
+        name = "primalTest" \
+            + "_disc_" + str(param["discount"]) \
+            + "_lambda_" + str(param["lambda_"]) \
+            + "_entropy_" + str(param["entropy_coeff"]) \
+            + "_minibatch_" + str(param["minibatch_size"]) \
+            + "_rollouts_" + str(param["rollout_length"]) \
+            + "_workers_" + str(param["workers"]) \
+            + "_kepochs_" + str(param["k_epochs"]) \
+            + "_recurrent_" + str(param["recurrent"]) \
+            + "_block_" + str(param["blockheur"]) \
+            + "_validact_" + str(param["validact"])
+
+        args.extend(["--use_custom_rewards"])
+        args.extend(["--step_r", str(param["step_r"])])
+        args.extend(["--obstacle_collision_r", str(param["obstacle_collision_r"])])
+        args.extend(["--agent_collision_r", str(param["agent_collision_r"])])
+        args.extend(["--goal_reached_r", str(param["goal_reached_r"])])
+        args.extend(["--finish_episode_r", str(param["finish_episode_r"])])
+        args.extend(["--block_r", str(param["block_r"])])
+
+        args.extend(["--env_name","independent_navigation-v8_0"])
+        args.extend(["--n_agents", str(param["n_agents"])])
+        args.extend(["--map_shape", str(param["env_size"])])
+        args.extend(["--view_d", str(param["view_d"])])
+        args.extend(["--obj_density", str(param["obj_density"])])
+        args.extend(["--policy", param["policy"]])
+        args.extend(["--name", name])
+        args.extend(["--seed", str(param["seed"])])
+        args.extend(["--render_rate", str(int(20))])
+        args.extend(["--benchmark_frequency", str(int(100))])
+        args.extend(["--benchmark_num_episodes", str(int(10))])
+        args.extend(["--benchmark_render_length", str(int(10))])
+        args.extend(["--checkpoint_frequency", str(int(30))])
+        args.extend(["--ppo_bc_iteration_prob", str(float(0.5))])
+       # args.extend(["--ppo_continue_from_checkpoint"])
+
+
+
+        #           PPO Paramares:
+        args.extend(["--ppo_hidden_dim", str(512)])
+        args.extend(["--ppo_lr_a", str(0.00002)])
+        args.extend(["--ppo_lr_v", str(0.00002)])
+        args.extend(["--ppo_base_policy_type", param['base_policy_type']])
+        args.extend(["--ppo_workers", str(param['workers'])])
+        args.extend(["--ppo_rollout_length", str(param['rollout_length'])])
+        args.extend(["--ppo_share_actor"])
+        args.extend(["--ppo_share_value"])
+        args.extend(["--ppo_iterations", n_iterations])
+        args.extend(["--ppo_k_epochs", str(param['k_epochs'])])
+        args.extend(["--ppo_eps_clip", str(param["eps_clip"])])
+        args.extend(["--ppo_minibatch_size", str(param['minibatch_size'])])
+        args.extend(["--ppo_entropy_coeff", str(param['entropy_coeff'])])
+        args.extend(["--ppo_value_coeff", str(param['value_coeff'])])
+        args.extend(["--ppo_discount", str(param['discount'])])
+        args.extend(["--ppo_gae_lambda", str(param['lambda_'])])
+        #args.extend(["--ppo_use_gpu"])
+
+        if param["recurrent"]:
+            args.extend(["--ppo_recurrent"])
+        if param["blockheur"]:
+            args.extend(["--ppo_heur_block"])
+        if param["validact"]:
+            args.extend(["--ppo_heur_valid_act"])
+        if param["noprevstate"]:
+            args.extend(["--ppo_heur_no_prev_state"])
+    
+        main.main(args)
+
+
+
+
 def ppo_A():
     n_iterations = str(500) #str(3000)
     experiment_group_name = "ppo_hyp_param"
@@ -2349,7 +2554,7 @@ def ppo_4_3_1():
         "n_agents": [4],
         #"recurrent": [False],
         "base_policy_type": ["primal7"],
-        "obj_density": [0.1, 0.2,0.3],
+        "obj_density": [0.1],
         "env_size": [7],
         "step_r": [-0.1], #[-0.01, -0.1, -0.4],
         "obstacle_collision_r": [-0.4], #[-0.015],
@@ -5861,8 +6066,6 @@ def ppo_10_12_0(): #Shortest path no blocking
         args.extend(["--ppo_bc_iteration_prob", str(float(0.5))])
        # args.extend(["--ppo_continue_from_checkpoint"])
 
-
-
         #           PPO Paramares:
         args.extend(["--ppo_hidden_dim", str(512)])
         args.extend(["--ppo_lr_a", str(0.00002)])
@@ -5994,8 +6197,6 @@ def ppo_10_13_0(): #Shortest path no blocking + Non-primal architecture not recu
         args.extend(["--checkpoint_frequency", str(int(200))])
         args.extend(["--ppo_bc_iteration_prob", str(float(0.5))])
        # args.extend(["--ppo_continue_from_checkpoint"])
-
-
 
         #           PPO Paramares:
         args.extend(["--ppo_hidden_dim", str(512)])
@@ -6463,13 +6664,6 @@ def ppo_10_19_0(): #Dir vec
         "noprevstate": [True]
     }
 
-    # "step_r": [-0.1], #[-0.01, -0.1, -0.4],
-    #     "obstacle_collision_r": [-0.4], #[-0.015],
-    #     "agent_collision_r": [-0.4], #[-1.0], 
-    #     "goal_reached_r": [0.3], #[0.1],
-    #     "finish_episode_r": [2.0],
-    #     "block_r": [-0.2],
-
     grid1 = ParameterGrid(parmeter_grid1)
 
     for param in grid1:
@@ -6689,3 +6883,9 @@ def ppo_10_20_0(): #Shortest path, no recurrent, FF NN
             args.extend(["--ppo_heur_no_prev_state"])
     
         main.main(args)
+
+
+
+
+
+

@@ -2,6 +2,87 @@ import main
 from sklearn.model_selection import ParameterGrid
 
 
+def maac_test():
+    episodes = str(10000)
+    experiment_group_name = "Test_Maac"
+    work_dir = experiment_group_name
+    plot_dir = experiment_group_name + "_Tensorboard"
+ 
+    parmeter_grid1 = {
+        "seed": [1],
+        "discount":[0.9],
+        "rollout_threads": [1],
+        "reward_scale": [10],
+        "policy": ["MAAC"],
+        "base_policy_type": ["primal7"],
+        "n_agents": [4],
+        "obj_density": [0.1],
+        "env_size": [7],
+        "maac_steps_per_update":[100],
+        "maac_num_updates":[1],
+        "maac_attend_heads":[4],
+        "maac_batch_size": [1024],
+        "env": ["independent_navigation-v0"],
+        "step_r": [-0.1],
+        "obstacle_collision_r": [-0.02], 
+        "agent_collision_r": [-0.2], 
+        "goal_reached_r": [0.3], 
+        "finish_episode_r": [2.0]
+    }
+
+    grid1 = ParameterGrid(parmeter_grid1)
+    
+    for param in grid1:
+        args = []
+        args = ["--working_directory", work_dir,"--alternative_plot_dir", plot_dir]
+
+        name = "maacTest" \
+            + "_disc_" + str(param["discount"]) \
+            + "_rewardscale_" + str(param["reward_scale"]) \
+            + "_minibatch_" + str(param["maac_batch_size"]) \
+            + "_nupdates_" + str(param["maac_steps_per_update"]) \
+            + "_attheads_" + str(param["maac_attend_heads"]) \
+            + "_envsize_" + str(param["env_size"]) \
+            + "_nagents_"+ str(param["n_agents"]) \
+            + "_objdensity_"+ str(param["obj_density"]) \
+            + "_seed_"+ str(param["seed"])
+
+        args.extend(["--env_name", param["env"]]) 
+        args.extend(["--n_agents", str(param["n_agents"])])
+        args.extend(["--map_shape", str(param["env_size"])])
+        args.extend(["--obj_density", str(param["obj_density"])])
+
+        args.extend(["--use_custom_rewards"])
+        args.extend(["--step_r", str(param["step_r"])])
+        args.extend(["--obstacle_collision_r", str(param["obstacle_collision_r"])])
+        args.extend(["--agent_collision_r", str(param["agent_collision_r"])])
+        args.extend(["--goal_reached_r", str(param["goal_reached_r"])])
+        args.extend(["--finish_episode_r", str(param["finish_episode_r"])])
+        args.extend(["--maac_buffer_length", str(int(1e5))])
+        args.extend(["--policy", str(param["policy"])])
+        args.extend(["--name", name])
+        args.extend(["--maac_share_actor"])
+        args.extend(["--maac_reward_scale", str(param["reward_scale"])])
+        args.extend(["--maac_n_rollout_threads", str(param["rollout_threads"])])
+        args.extend(["--maac_steps_per_update", str(param["maac_steps_per_update"])])
+        args.extend(["--maac_num_updates", str(param["maac_num_updates"])])
+        args.extend(["--maac_attend_heads", str(param["maac_attend_heads"])])
+        args.extend(["--maac_n_episodes", episodes])
+        args.extend(["--maac_batch_size", str(param["maac_batch_size"])])
+        args.extend(["--maac_base_policy_type", param["base_policy_type"]]) 
+        args.extend(["--benchmark_frequency", str(int(1000))])
+        args.extend(["--benchmark_num_episodes", str(int(20))])
+        args.extend(["--benchmark_render_length", str(int(25))])
+        args.extend(["--render_rate", str(int(200))])
+        args.extend(["--checkpoint_frequency", str(int(1000))])
+        args.extend(["--maac_gamma", str(param["discount"])])
+        args.extend(["--seed", str(param["seed"])])
+        # Use GPU during training
+        # args.extend(["--maac_use_gpu"])
+    
+        main.main(args)
+
+
 def maac_1A1():
     episodes = str(15000)
     # experiment_group_name = "TestMaac"

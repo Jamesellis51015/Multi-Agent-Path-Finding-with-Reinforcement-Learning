@@ -1,14 +1,12 @@
+import numpy as np
+import itertools
 import torch
+import copy
 from Agents.PPO.ppo import PPO
 from Agents.PPO.utils import make_parallel_env
 from Agents.PPO.buffer import PPO_Buffer
-import itertools
 from utils.logger import Logger
 
-import numpy as np
-
-
-#heplper functions:
 def get_n_obs(next_obs, info):
     nobs = []
     for ob, inf in zip(next_obs, info):
@@ -17,8 +15,6 @@ def get_n_obs(next_obs, info):
         else:
             nobs.append(ob)
     return nobs
-
-
 
 def run(args):
     if args.ppo_use_gpu:
@@ -53,6 +49,11 @@ def run(args):
         render_cntr = 0
         info2 = [{"valid_act":{i:None for i in ob.keys()}} for ob in obs]
         while buff.is_full == False:
+            if args.ppo_heur_valid_act:
+                val_act_hldr = copy.deepcopy(env.return_valid_act())
+                info2 = [{"valid_act":hldr} for hldr in val_act_hldr]
+            else:
+                val_act_hldr = [{i:None for i in ob.keys()} for ob in obs]
             ppo.prep_device(device)
             a_probs, a_select, value, hx_cx_actr_n, hx_cx_cr_n, blocking = zip(*[ppo.forward(ob,ha,hc, dev=device, valid_act_heur = inf2["valid_act"] ) \
                                     for ob,ha,hc, inf2 in zip(obs, hx_cx_actr, hx_cx_cr, info2)])
@@ -64,7 +65,7 @@ def run(args):
                     if info[0]["terminate"]:
                         render_cntr += 1
             next_obs_ = get_n_obs(next_obs, info)
-            buff.add(obs, r, value, next_obs_, a_probs, a_select, info, dones, hx_cx_actr, hx_cx_cr, hx_cx_actr_n, hx_cx_cr_n, blocking)
+            buff.add(obs, r, value, next_obs_, a_probs, a_select, info, dones, hx_cx_actr, hx_cx_cr, hx_cx_actr_n, hx_cx_cr_n, blocking,val_act_hldr)
             hx_cx_actr, hx_cx_cr = hx_cx_actr_n, hx_cx_cr_n 
             #Reset hidden and cell states when epidode done
             for i, inf in enumerate(info):
@@ -76,10 +77,10 @@ def run(args):
             obs = next_obs
 
         if buff.is_full:
-            observations, a_prob, a_select, adv, v, infos, h_actr, h_cr, blk_labels, blk_pred = buff.sample(args.ppo_discount, \
-                args.ppo_gae_lambda, blocking=args.ppo_heur_block)
+            observations, a_prob, a_select, adv, v, infos, h_actr, h_cr, blk_labels, blk_pred, val_act  = buff.sample(args.ppo_discount, \
+                args.ppo_gae_lambda, blocking=args.ppo_heur_block, use_valid_act = args.ppo_heur_valid_act)
             stats["action_loss"], stats["value_loss"] \
-            = ppo.update(observations, a_prob, a_select, adv, v, 0, h_actr, h_cr, blk_labels, blk_pred, dev=device)
+            = ppo.update(observations, a_prob, a_select, adv, v, 0, h_actr, h_cr, blk_labels, blk_pred,val_act, dev=device)
 
             if args.ppo_recurrent:
                 for a, c in zip(hx_cx_actr, hx_cx_cr):
@@ -91,7 +92,6 @@ def run(args):
         if (it+1) % args.benchmark_frequency == 0:
             rend_f, ter_i = benchmark_func(args, ppo, args.benchmark_num_episodes, args.benchmark_render_length, device)
             logger.benchmark_info(ter_i, rend_f, it)
-
         
         #Logging:
         stats["iterations"] = it
@@ -112,15 +112,12 @@ def run(args):
 
 
 def benchmark_func(args, model, num_episodes, render_len, device, greedy=False):
-    #Assume parallel env
     env = make_parallel_env(args, np.random.randint(0, 10000), 1)
     render_frames = []
     obs = env.reset()
-    #terminal_info = []
     all_info = []
     render_frames.append(env.render(indices = [0])[0])
     
-
     for ep in range(num_episodes):
         if args.ppo_recurrent:
             hx_cx_actr = [{i:model.init_hx_cx(device) for i in ob.keys()} for ob in obs]
@@ -131,13 +128,8 @@ def benchmark_func(args, model, num_episodes, render_len, device, greedy=False):
         info2 = [{"valid_act":{i:None for i in ob.keys()}} for ob in obs]
         for t in itertools.count():
             model.prep_device(device)
-
-           # a_probs, a_select, value, _, _, _ = zip(*[model.forward(ob, ) for ob in obs])
-
             a_probs, a_select, value, _, _, _ = zip(*[model.forward(ob,ha,hc, dev=device, valid_act_heur = inf2["valid_act"], greedy=greedy) \
                                     for ob,ha,hc, inf2 in zip(obs, hx_cx_actr, hx_cx_cr, info2)])
-
-
             a_env_dict = [{key:val.item() for key,val in hldr.items()} for hldr in a_select]
             next_obs, r, dones, info = env.step(a_env_dict)
             if ep < render_len:
@@ -146,10 +138,8 @@ def benchmark_func(args, model, num_episodes, render_len, device, greedy=False):
                 else:
                     render_frames.append(env.render(indices = [0])[0])
             obs = next_obs
-
             all_info.append(info)
             if info[0]["terminate"]:
-             #   terminal_info.append(info[0])
                 break
     return render_frames, all_info
 

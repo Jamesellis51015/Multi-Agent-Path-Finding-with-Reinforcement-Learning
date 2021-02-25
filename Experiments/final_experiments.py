@@ -1,6 +1,5 @@
 import main
 from sklearn.model_selection import ParameterGrid
-#For manual testing:
 import argparse
 from tabulate import tabulate
 from Env.make_env import make_env
@@ -46,20 +45,14 @@ def benchmark_func(env_args, recurrent, model, num_episodes, render_len, device,
                 "execution_time": [],
                 "obstacle_collisions": [],
                 "agent_collisions": []}
-    #Assume parallel env
     env = make_parallel_env(env_args, np.random.randint(0, 10000), 1)
     render_frames = []
-   # obs = env.reset()
     model.actors[0].eval()
-    
-
     terminal_info = []
     render_frames.append(env.render(indices = [0])[0])
+
     for ep in range(num_episodes):
         obs = env.reset()
-        # env_hldr = env.return_env()
-        # env_hldr = env_hldr[0]
-        # env_hldr.render("human")
         if recurrent:
             hx_cx_actr = [{i:model.init_hx_cx(device) for i in ob.keys()} for ob in obs]
             hx_cx_cr = [{i:model.init_hx_cx(device) for i in ob.keys()} for ob in obs]
@@ -69,7 +62,6 @@ def benchmark_func(env_args, recurrent, model, num_episodes, render_len, device,
         info2 = [{"valid_act":{i:None for i in ob.keys()}} for ob in obs]
         total_ep_time = 0
         for t in itertools.count():
-            #a_probs, a_select, value = zip(*[model.forward(ob, greedy =True) for ob in obs])
             t1 = time.time()
             if valid_act:
                 val_act_hldr = copy.deepcopy(env.return_valid_act())
@@ -81,8 +73,6 @@ def benchmark_func(env_args, recurrent, model, num_episodes, render_len, device,
             a_env_dict = [{key:val.item() for key,val in hldr.items()} for hldr in a_select]
             next_obs, r, dones, info = env.step(a_env_dict)
             total_ep_time += (time.time() - t1)
-
-           # env_hldr.render("human")
 
             hx_cx_actr = [{k:v for k,v in hldr.items()} for hldr in hx_cx_actr_n]
             hx_cx_cr = [{k:v for k,v in hldr.items()} for hldr in hx_cx_cr_n]
@@ -104,13 +94,11 @@ def benchmark_func(env_args, recurrent, model, num_episodes, render_len, device,
             if info[0]["terminate"]:
                 terminal_info.append(info[0])
                 break
-    #return render_frames, terminal_info
     
     return render_frames, results
 
 
 def run_PRIMAL(args, num_trials, render_len = 5):
-    #CHECKPOINT_PATH = "/home/james/Desktop/Gridworld/EXPERIMENTS/FINAL_COMPARISON/Checkpoint_Policies/primal/checkpoint_600"
     CHECKPOINT_PATH = '/home/james/Desktop/Gridworld/EXPERIMENTS/FINAL_COMPARISON/Checkpoint_Policies/primal/checkpoint_1800'
     env_name = "independent_navigation-v8_1"
     args.env_name = env_name
@@ -118,7 +106,6 @@ def run_PRIMAL(args, num_trials, render_len = 5):
     obs_space = env.observation_space[-1]
     ppo = PPO_PRIMAL(5, obs_space, "primal9", env.n_agents, True, True, 8, 512,recurrent=True)
     model_info = torch.load(CHECKPOINT_PATH)
-    #print(model_info["model"]["actor_state_dict"]["lstm.weight_hh"])
     ppo.load(model_info["model"])
     DEVICE = 'cpu'
     render_frames, results = benchmark_func(args, True, ppo, num_trials,render_len, DEVICE, greedy = False, valid_act=False)
@@ -198,23 +185,9 @@ def run_mstar(args, num_trials, render_len):
                 render_frames.append(frame)
     return render_frames, results
 
-
-
-
-    
-        
-            
-
-
-
-
-
-
-
 def save_render(render_frams, path, name):
     if len(render_frams) > 0:
         clip = mpy.ImageSequenceClip(render_frams, fps = 5)
-        #clip.write_gif(self.render_dir + "/render_" + str(episode) + '.gif')
         hldr2 = "render_" + name + '.mp4'
         hldr = os.path.join(path, hldr2)
         clip.write_videofile(hldr)
@@ -223,8 +196,6 @@ def save_render(render_frams, path, name):
 def run_final_1_0():
     FILE_PATH = "/home/james/Desktop/Gridworld/EXPERIMENTS/FINAL_COMPARISON/"
     RENDER_PATH = "/home/james/Desktop/Gridworld/EXPERIMENTS/FINAL_COMPARISON/RENDER"
-    #FILE_PATH = "/home/james/Desktop/Gridworld/EXPERIMENTS/test5/"
-    #RENDER_PATH = "/home/james/Desktop/Gridworld/EXPERIMENTS/test5/RENDER"
     NUM_TRIALS = 20
     #TIME_LIMIT = 10*60
 
@@ -331,66 +302,3 @@ def run_final_1_0():
             # save_render(render_frames, RENDER_PATH, "mstar_" + name)
 
             torch.save(data_dict, os.path.join(FILE_PATH, name +".pkl"))
-
-
-
-
-
-
-
-# def run_ppo_benchmark(policy, iteration, number_trials = 5, identifier = ""):
-#     FILE_PATH = "/home/james/Desktop/Gridworld/EXPERIMENTS/FINAL_COMPARISON/"
-#     RENDER_PATH = "/home/james/Desktop/Gridworld/EXPERIMENTS/FINAL_COMPARISON/RENDER"
-
-#     base_path = "/home/james/Desktop/Gridworld/EXPERIMENTS/FINAL_COMPARISON/"
-
-#     base_path += identifier + "_" + str(iteration)
-#     FILE_PATH = base_path + "/"
-#     RENDER_PATH = base_path + "/RENDER/"
-
-#     if not os.path.exists(FILE_PATH):
-#         os.makedirs(FILE_PATH)
-#     if not os.path.exists(RENDER_PATH):
-#         os.makedirs(RENDER_PATH)
-
-#     NUM_TRIALS = number_trials
-#    # TIME_LIMIT = 10*60 + 1
-
-#     name ="test_mstar-v0"
-#     mode = "human"
-#     parser = argparse.ArgumentParser("Testing")
-
-#     #Environment:
-#     parser.add_argument("--map_shape", default = (32,32), type=object)
-#     parser.add_argument("--n_agents", default = 10, type=int)
-#     parser.add_argument("--view_d", default = 4, type=int)
-#     parser.add_argument("--env_name", default = name, type= str)
-#     parser.add_argument("--use_default_rewards", default=True, type=bool)
-#     parser.add_argument("--obj_density", default = 0.2, type=int)
-#     parser.add_argument("--use_custom_rewards", default = False, action='store_true')
-#     parser.add_argument("--custom_env_ind", default= 1, type=int)
-#     parser.add_argument("--ppo_heur_block", default=False, type=bool)
-
-#     args = parser.parse_args()
-
-#     #env = Independent_NavigationV8_0(args)
-
-#     #10x10
-#     map_shape = (10,10)
-#     args.map_shape = map_shape
-#     for ob_density in [0.0, 0.1,0.2,0.3]:
-#         for n in [4,8,12,16]:
-#             args.n_agents = n
-#             args.obj_density = ob_density
-#             name = "map_shape_" + str(map_shape[0]) + "_" + str(ob_density) + "_nagents_" + str(n) 
-#             data_dict = {"name": name,
-#                         "primal": None
-#                         }
-
-#             #render_frames, results = run_PRIMAL(args, NUM_TRIALS)
-#             render_frames, results = benchmark_func(args, True, policy, NUM_TRIALS, 10, 'gpu', greedy = False, valid_act=False)
-#             data_dict["primal"] = copy.deepcopy(results)
-#             save_render(render_frames, RENDER_PATH, "primal_" + name)
-
-#             torch.save(data_dict, os.path.join(FILE_PATH, name +".pkl"))
-

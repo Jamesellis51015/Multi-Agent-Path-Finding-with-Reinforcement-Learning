@@ -207,68 +207,6 @@ class Heuristics():
             prev_v = v
         return all_v
 
-
-    # def dijkstra_search(self, start_pos, end_pos, ignore = ["agent"]):
-    #     '''
-    #     NB: The cost of starts at 0 at the start position and continues thougough 
-    #     all postions. In order to use the cost to search for the cheapest path,
-    #     start, place end postion at start position.
-    #     Searches the entire search space and returns a dictionary of the closed set '''
-
-    #     raise Exception("Use Breadth First Search instead")
-
-    #     class myQueue():
-    #         def __init__(self):
-    #             self.q = Queue()
-    #             self.lookup = dict()
-    #         def put(self, item):
-    #             if not item.pos in self.lookup:
-    #                 self.q.put(item)
-    #                 self.lookup[item.pos] = item
-    #         def get(self):
-    #             item = self.q.get()
-    #             del self.lookup[item.pos]
-    #             return item
-    #         def empty(self):
-    #             return self.q.empty()
-
-    #     obstacle_types = copy.deepcopy(self.obstacle_types)
-    #     for ig in ignore:
-    #         if ig in self.obstacle_types:
-    #             ind = obstacle_types.index(ig)
-    #             del obstacle_types[ind]
-    #    # open = Queue()
-    #     open = myQueue()
-    #     #open = []
-    #     closed = {}
-    #     start_node = self.Node(start_pos, 0, None, None)
-    #     path_found_flag = False
-    #     open.put(start_node)
-    #     #open.append(start_node)
-    #     while not open.empty():
-    #     #while len(open) != 0:
-    #         #(_, curr_node) = open.get()
-    #         curr_node = open.get()
-    #         #curr_node = open[-1]
-    #         #del open[-1]
-    #         if curr_node.pos == end_pos:
-    #             closed[curr_node.pos] = curr_node
-    #             path_found_flag = True
-    #         next_nodes_pos = self._get_neigbours(curr_node.pos, obstacle_types)
-            
-    #         move_cost = curr_node.move_cost + 1
-    #         for n in next_nodes_pos:
-    #             (p,a) = n 
-    #             p = tuple(p)
-    #             if not p in closed.keys(): #or (closed[p]).move_cost > move_cost:
-    #                 #priority = move_cost + heuristic(p, end_pos)
-    #                 #open.put((priority, self.Node(p, move_cost, a, curr_node.pos)))
-
-    #                 open.put(self.Node(p, move_cost, a, curr_node.pos))
-    #                 #open.append(self.Node(p, move_cost, a, curr_node.pos))
-    #         closed[curr_node.pos] = curr_node
-    #     return closed
-
     def BFS(self, start_pos, end_pos, ignore = ["agent"]):
         assert type(start_pos) == tuple
         assert type(end_pos) == tuple
@@ -362,60 +300,7 @@ class Heuristics():
                 else:
                     return False
 
-        class myPriorityQ():
-            ''' Specifically for use with Node class objects'''
-            def __init__(self):
-                self.q = []
-                self.lookup = dict()
-            def push(self, item):
-                heapq.heappush(self.q, item)
-                node = item[-1]
-                if node.pos in self.lookup:
-                    self.lookup[node.pos].append(node)
-                else:
-                    self.lookup[node.pos] = [node]
-            def pop(self):
-                (_, n) = heapq.heappop(self.q)
-                list_of_nodes = self.lookup[n.pos]
-                if len(list_of_nodes) == 1:
-                    del self.lookup[n.pos]
-                else:
-                    found_ind = None
-                    for i, item in enumerate(list_of_nodes):
-                        if item.f == n.f:
-                            found_ind = i
-                            break
-                    assert not found_ind is None
-                    del list_of_nodes[found_ind] 
-                    self.lookup[n.pos] = list_of_nodes
-                return n
- 
-            def __len__(self,):
-                return len(self.q)
-            def empty(self):
-                if len(self.q) == 0:
-                    return True
-                else:
-                    return False
-            def __contains__(self, other_node):
-                if other_node.pos in self.lookup:
-                    return True
-                else:
-                    return False
-            def contains_less_than(self, node):
-                ''' If priority Q contains same node
-                    with f value less than input node.
-                    If False returned, node should be 
-                    added to open list'''
-                if node.pos in self.lookup:
-                    lst_at_pos = self.lookup[node.pos]
-                    found_true_flag = False
-                    for n_stored in lst_at_pos:
-                        if n_stored.f < node.f:
-                            found_true_flag = True
-                    return found_true_flag
-                else:
-                    return False
+    
         obstacle_types = copy.deepcopy(self.obstacle_types)
         for ig in ignore:
             if ig in self.obstacle_types:
