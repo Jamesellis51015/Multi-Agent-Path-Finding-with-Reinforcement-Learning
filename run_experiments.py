@@ -11,11 +11,9 @@ import Experiments.ic3_experiments as exp14
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Run Experiment")
     parser.add_argument("--name", type=str)
-    args = parser.parse_args(["--name", "primal_test"])
     #args = parser.parse_args(["--name", "ic3net_test"])
-    #experiments = [exp12, exp13, exp14, exp15, exp16, exp17, exp18]
     experiments = [exp12, exp13, exp14]
-    #args = parser.parse_args()
+    args = parser.parse_args()
     flag = True
     for ex in experiments:
         if hasattr(ex, args.name):
