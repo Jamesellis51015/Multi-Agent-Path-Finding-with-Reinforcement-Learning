@@ -5,15 +5,11 @@ from Env.make_env import make_env
 from gym import spaces
 from sklearn.model_selection import ParameterGrid
 from distutils.dir_util import copy_tree
-# import config
-# import numpy as np
-# from PIL import Image
-# import time
 import os
 import torch
 import torch.nn.functional as F
 from Agents.PPO.ppo import PPO
-from Agents.Ind_PPO import benchmark_func
+from Agents.PPO_IL import benchmark_func
 import math
 import numpy as np
 from utils.logger import Logger
@@ -67,28 +63,10 @@ def combine_all_data(folder_path):
         data.append(torch.load(file))
     
     all_data = []
-    #all_obs = []
-    #all_a = []
+
     for d in data:
         all_data.extend(d)
-        #all_obs.extend(d["observations"])
-        #all_a.extend(d["actions"])
-    
-    # for i in range(len(all_obs)):
-    #     headers = ["Channels"]
-    #     rows = [["Obstacle Channel"], ["Other Agent Channel"], ["Own Goals Channel"], \
-    #         ["Own Position Channel"], ["Other Goal Channel"]]
-    #     #for agnt in range(args.n_agents):
-    #     #headers.append("Agent {}".format(agnt))
-    #     rows[0].append(all_obs[i][0])
-    #     rows[1].append(all_obs[i][1])
-    #     rows[2].append(all_obs[i][2])
-    #     rows[3].append(all_obs[i][4])
-    #     rows[4].append(all_obs[i][3])
-    #     print(tabulate(rows, tablefmt = 'fancy_grid'))
-    #     print("Action: {}".format(all_a[i]))
 
-    #data = {"observations":np.array(all_obs), "actions": np.array(all_a)}
     return all_data, files_in_folder
 
 def delete_files(files):
@@ -98,8 +76,7 @@ def delete_files(files):
 def split_data(data, save_folder, name, ratio = "70:15:15", shuffle=True):
     '''Takes a list of the data and
     splits it into train, test and validation sets '''
-    #assert len(data["observations"]) == len(data["actions"])
-    #data_len = len(data["observations"])
+
     data_len = len(data)
     ratios = [int(r) for r in ratio.split(":")]
     ind = [(data_len / sum(ratios) )*r for r in ratios]
@@ -112,27 +89,10 @@ def split_data(data, save_folder, name, ratio = "70:15:15", shuffle=True):
 
     if shuffle:
         data_item_ind = np.random.choice(data_item_ind, data_len, replace = False)
-    
-    #train_data = (data["observations"][data_item_ind[:ind_train]] ,data["actions"][data_item_ind[:ind_train]])
-    #validation_data = (data["observations"][data_item_ind[ind_train:ind_validate]] ,data["actions"][data_item_ind[ind_train:ind_validate]])
-    #test_data = (data["observations"][data_item_ind[ind_validate:]] , data["actions"][data_item_ind[ind_validate:]])
 
     train_data = data[:ind_train]
     validation_data = data[ind_train:ind_validate]
     test_data = data[ind_validate:]
-    # for i in range(0, data_len,4):
-    #     headers = ["Channels"]
-    #     rows = [["Obstacle Channel"], ["Other Agent Channel"], ["Own Goals Channel"], \
-    #         ["Own Position Channel"], ["Other Goal Channel"]]
-    #     #for agnt in range(args.n_agents):
-    #     #headers.append("Agent {}".format(agnt))
-    #     rows[0].append(train_data[i][0][0])
-    #     rows[1].append(train_data[i][0][1])
-    #     rows[2].append(train_data[i][0][2])
-    #     rows[3].append(train_data[i][0][4])
-    #     rows[4].append(train_data[i][0][3])
-    #     print(tabulate(rows, tablefmt = 'fancy_grid'))
-    #     print("Action: {}".format(train_data[i][1]))
     
     train_path = os.path.join(save_folder, name + "_train.pt")
     torch.save(train_data, train_path)
@@ -161,8 +121,6 @@ def BC_train():
                 (a_pred, _, _, _) = ppo_policy.actors[0].forward(ob)
                 valid_loss_hldr.append(loss_f(a_pred, a).item())
         return np.mean(valid_loss_hldr)
-            #valid_loss = {"validation_loss": torch.mean(valid_loss_hldr).item()}
-            #logger.plot_tensorboard(valid_loss)
             
     def save(model, logger, end):
         name = "checkpoint_" + str(end)
@@ -299,11 +257,6 @@ def BC_train():
             print("Epoch: {}  Train Loss: {} Validation Loss: {}".format(epoch, epoch_loss, valid_loss))
         print("Done")
 
-
-        #Save policy
-        # name = "checkpoint_0"
-        # checkpoint_path = os.path.join(logger.checkpoint_dir, name)
-        # ppo.save(checkpoint_path)
         save(ppo, logger, "end")
 
         #Evaluate policy (benchmark)
@@ -357,15 +310,6 @@ def evaluate_checkpoint():
 
     ppo.load(torch.load(CHECKPOINT_PATH))
     logger = Logger(args, "NONE" , "none",ppo)
-
-
-    # variable_args_dict = {
-    #     "n_agents": [1],
-    #     "obj_density": [0.0,0.1, 0.2, 0.3], 
-    #     "map_shape": [(30, 30), (40, 40)]
-    # }
-
-    # evaluate_across_evs(ppo, logger, args, variable_args_dict, 1000, 30, 'gpu', greedy=False)
     
     # 32 x 32
     variable_args_dict = {
@@ -481,8 +425,6 @@ def evaluate_checkpoint2():
     #     "map_shape": [(50,50)]
     # }
     # evaluate_across_evs(ppo, logger, args, variable_args_dict, 1000, 30, 'gpu', greedy=False)
-
-
 
 
 def evaluate_across_evs(policy, logger, env_args, variable_args_dict, num_episodes, render_len, device, greedy=False): 
@@ -754,13 +696,6 @@ def train_PO_FOV_data(custom_args = None):
             epoch_loss_hldr.append(loss.item())
             iterations += 1
 
-        # if (epoch+1) % 10 == 0:
-        #     ppo.extend_agent_indexes(args.n_agents)
-        #     rend_frames, all_info = benchmark_func(args, ppo, 100, 30, DEVICE, greedy=True)
-        #     logger.benchmark_info(all_info, rend_frames, epoch, end_str = "_greedy")
-        #     rend_frames, all_info = benchmark_func(args, ppo, 100, 30, DEVICE, greedy=False)
-        #     logger.benchmark_info(all_info, rend_frames, epoch, end_str = "_NotGreedy")
-
         print("iterations: {}".format(iterations))
         epoch_loss = np.mean(epoch_loss_hldr)
         valid_loss = get_validation_loss(valid_loader, ppo)
@@ -799,19 +734,6 @@ def train_PO_FOV_data(custom_args = None):
         del valid_loader
     except:
         pass
-
-
-
-    # #Evaluate best policy across all ens
-    # assert not best_policy is None
-    # print("Best epoch nr is {}".format(best_epoch_nr))
-    # variable_args_dict = {
-    #     "obj_density": [0.0,0.1,0.2,0.3], 
-    #     "map_shape": [7,10,15,20,25,30]
-    # }
-    # variable_args_dict["map_shape"] = [(ms, ms) for ms in variable_args_dict["map_shape"]]
-    # #evaluate_across_evs(best_policy, logger, args, variable_args_dict, 1000, 30, DEVICE, greedy=True)
-    # evaluate_across_evs(best_policy, logger, args, variable_args_dict, 1000, 30, DEVICE, greedy=False)
 
 
     assert not best_policy is None
@@ -890,9 +812,6 @@ def generate_PO_FOV_data(custom_args = None):
 
     ob_dens = [0.0,0.1,0.2,0.3]
     env_sizes = [10,20,30]
-
-    # ob_dens = [0.0]
-    # env_sizes = [30]
 
     for e_s in env_sizes:
         for ob_d in ob_dens:

@@ -1,5 +1,4 @@
 import numpy as np
-#from Agents.PPO.utils import make_parallel_env
 import torch
 import argparse
 from tabulate import tabulate
@@ -11,18 +10,6 @@ import time
 import os
 import ray
 
-#ray.init()
-
-
-
-#class DataGenerator():
-    #def __init__(self):
-    #    pass
-        #self.args = args
-        #self.data_path = data_path
- #       self.env = make_parallel_env(args, np.random.randint(5000), 2)
-  #      self.n_envs = len(self.env)
-#@ray.remote
 def generate(env, episodes, n_agents):
     def make_start_postion_list(env_hldr):
         '''Assumes agent keys in evn.agents is the same as agent id's '''
@@ -38,79 +25,25 @@ def generate(env, episodes, n_agents):
             end_positions.append(env_hldr.goals[i].pos)
         return end_positions
     data = []
-    observations = []
-    actions = []
     ep_observations = []
     ep_actions = []
     for ep in range(episodes):
-    #for ep in range(1):
-        #continue_flag = False
         mstar_actions = None
         while mstar_actions is None:
             obs = env.reset()
-            #env.render('human')
             start_pos = make_start_postion_list(env)
             end_pos = make_end_postion_list(env)
-            #mstar_actions = env.graph.mstar_search3(start_pos, end_pos)
-
             inflation = 1.2
             mstar_actions =  env.graph.mstar_search4_OD(start_pos, end_pos, inflation)
             if mstar_actions is None:
                 print("No M-star solution found for env generated")
         for a in mstar_actions:
-           #assert continue_flag == False
             ep_observations.append(obs)
-            #print("Observation: {}".format(obs[0][-1]))
             for i in range(n_agents):
                 data.append((obs[i], a[i]))
             obs, r, dones, info = env.step(a)
-            #env.render(mode = 'human')
             ep_actions.append(a)
-            if info["terminate"]:
-                if info["all_agents_on_goal"] == 1:
-                    #add ep data
-                    for ep_obs, ep_a in zip(ep_observations, ep_actions):
-                      #  print("observations: {}".format(ep_obs))
-                      #  print("\nActions: {}".format(ep_a))
-                        for agent_handle, agent_obs in ep_obs.items():
-                            pass
-                           # data.append((agent_obs, ep_a[agent_handle]))
-                            
-                            ####################
-                            # headers = ["Channels"]
-                            # rows = [["Obstacle Channel"], ["Other Agent Channel"], ["Own Goals Channel"], \
-                            #     ["Own Position Channel"], ["Other Goal Channel"]]
-                            # rows[0].append(agent_obs[0])
-                            # rows[1].append(agent_obs[1])
-                            # rows[2].append(agent_obs[2])
-                            # rows[3].append(agent_obs[4])
-                            # rows[4].append(agent_obs[3])
-                            # print(tabulate(rows, tablefmt = 'fancy_grid'))
-                            # print("Action: {}".format(ep_a[agent_handle]))
-                            #######################
-                else:
-                    print("M-star gave wrong solution. Episode data discarded.")
-                ep_observations = []
-                ep_a = []
-               # continue_flag = True
-        # #if continue_flag:
-        # headers = ["Channels"]
-        # rows = [["Obstacle Channel"], ["Other Agent Channel"], ["Own Goals Channel"], \
-        #     ["Own Position Channel"], ["Other Goal Channel"]]
-        # #for agnt in range(args.n_agents):
-        # #headers.append("Agent {}".format(agnt))
-        # rows[0].append(observations[ep*5][0])
-        # rows[1].append(observations[ep*5][1])
-        # rows[2].append(observations[ep*5][2])
-        # rows[3].append(observations[ep*5][4])
-        # rows[4].append(observations[ep*5][3])
-        # print(tabulate(rows, tablefmt = 'fancy_grid'))
-        # print("Action: {}".format(actions[ep*5]))
-            #continue
     return data
-    #return #{"observations": np.array(observations),
-           # "actions": np.array(actions)}
-
 
 
 def generate_data(name = "independent_navigation-v0", custom_args = None):
@@ -142,13 +75,13 @@ def generate_data(name = "independent_navigation-v0", custom_args = None):
         EPISODES = 5000
     else:
         EPISODES = args.n_episodes
-    #WORKERS = 4
+   
     if args.base_path == "none":
         import __main__
         base_path = os.path.dirname(__main__.__file__)
         base_path = os.path.join(base_path, "BC_Data")
     else:
-        #base_path = args.base_path
+  
         base_path = '/home/james/Desktop/Gridworld/BC_Data'
 
     data_folder = args.folder_name #'none'
