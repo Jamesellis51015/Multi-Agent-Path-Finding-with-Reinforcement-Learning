@@ -16,34 +16,40 @@
 # How to run examples:
 
 ## Create a conda 'gridworld' environment using the environment.yml file:
+```bash
 conda env create -f environment.yml
 conda activate gridworld
-
+```
 ## Manually contol an agent on a gridworld:
 Run gridworld_manual.py with arguments for the map size [x=y=map_shape], the number of agents and obstacle density:
-
+```bash
 python gridworld_manual.py --map_shape 10 --n_agents 2 --obj_density 0.2
-
+```
 To see a command-line printout of the observations add --verbose
 
 Follow comand instuctions to make agents move. 
 For example: 0 1 1 2 s    => agent 0 move up ; agent 1 move right ; step
 
 ## Run ODM* on an environment:
+```bash
 python odmstar_example.py --map_shape 32 --n_agents 20 --obj_density 0.2 --inflation 1.1
-
+```
 ## Train a PPO agent:
+```bash
 python run_experiments.py --name ppo_test
-
+```
 ## Train a IC3Net agent:
+```bash
 python run_experiments.py --name ic3net_test
-
+```
 ## Train a MAAC agent:
+```bash
 python run_experiments.py --name maac_test
-
+```
 ## Train a PRIMAL agent:
+```bash
 python run_experiments.py --name primal_test
-
+```
 ## Code Credits:
 
 Rendering of Gridworld environment:
